@@ -1,0 +1,10 @@
+*.nds
+/build/
+/vendor/
+build_config.rb.lock
+*.o
+*.elf
+*.map
+.DS_Store
+*~
+*.swp
