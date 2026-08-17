@@ -1,3 +1,5 @@
+# Requires mruby 4.0.0 at /vendor/mruby
+
 devkitpro = ENV.fetch("DEVKITPRO", "/opt/devkitpro")
 devkitarm = ENV.fetch("DEVKITARM", "#{devkitpro}/devkitARM")
 
@@ -21,9 +23,12 @@ MRuby::CrossBuild.new("nds") do |conf|
   end
 
   conf.archiver.command = "#{devkitarm}/bin/arm-none-eabi-ar"
+  conf.host_target = "arm-none-eabi"
   conf.bins = []
   conf.build_mrbtest_lib_only
   conf.disable_cxx_exception
 
   conf.gembox "stdlib"
+  conf.gem "gems/mruby-json"
+  conf.gem "gems/mruby-onig-regexp"
 end

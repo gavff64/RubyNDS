@@ -29,11 +29,12 @@ end
 Net.close(sock)
 
 header_end = response.index("\r\n\r\n")
+response = response[header_end..-1]
 
 if response.bytesize == 0
-  puts("Nothing was returned.")
+  puts("Connected, but nothing was returned.")
 else
   puts("Connected! Got #{response.bytesize} bytes.")
   puts("")
-  puts(response[header_end..-1])
+  puts("Temperature in New York is #{response[/\d+/]} degrees Fahrenheit.")
 end
