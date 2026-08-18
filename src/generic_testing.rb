@@ -64,6 +64,7 @@ YELLOW = Color.rgb(31, 31, 0)
 BLUE = Color.rgb(0, 0, 31)
 GREEN = Color.rgb(0, 31, 0)
 GRAY = Color.rgb(24, 24, 24)
+BLACK = Color.rgb(0, 0, 0)
 
 def puts(*args)
   args.each do |a|
@@ -75,10 +76,11 @@ while System.main_loop?
   Input.update
 
   (puts("A is pressed"); Gfx.fill_rect(:top, 10, 20, 50, 30, RED)) if Input.down?(KEY_A)
-  (puts("B is pressed"); Gfx.fill_rect(:top, 10, 20, 50, 30, YELLOW)) if Input.down?(KEY_B)
-  (puts("X is pressed"); Gfx.fill_rect(:top, 10, 20, 50, 30, BLUE)) if Input.down?(KEY_X)
-  (puts("Y is pressed"); Gfx.fill_rect(:top, 10, 20, 50, 30, GREEN)) if Input.down?(KEY_Y)
-  (puts("START is pressed"); Gfx.fill_rect(:top, 10, 20, 50, 30, GRAY)) if Input.down?(KEY_START)
+  (puts("B is pressed"); Gfx.fill_rect(:top, 20, 40, 50, 30, YELLOW)) if Input.down?(KEY_B)
+  (puts("X is pressed"); Gfx.fill_rect(:top, 40, 80, 50, 30, BLUE)) if Input.down?(KEY_X)
+  (puts("Y is pressed"); Gfx.fill_rect(:top, 80, 100, 50, 30, GREEN)) if Input.down?(KEY_Y)
+  (puts("START is pressed"); Gfx.fill_rect(:top, 50, 50, 50, 30, GRAY)) if Input.down?(KEY_START)
+  (puts("Touchscreen. Cleared screen."); Gfx.fill_rect(:top, 0, 0, 156, 192, BLACK)) if Input.down?(KEY_TOUCH)
 
   System.vblank
 end
