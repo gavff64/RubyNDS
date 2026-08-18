@@ -1,0 +1,2 @@
+gems/mruby-json/** linguist-vendored
+gems/mruby-onig-regexp/** linguist-vendored

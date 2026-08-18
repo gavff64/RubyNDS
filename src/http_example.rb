@@ -18,7 +18,12 @@ request_lines = [
   "Connection: close"
 ]
 request = request_lines.join("\r\n") + "\r\n\r\n"
-Net.send(sock, request)
+
+offset = 0
+while offset < request.bytesize
+  written = Net.send(sock, request.byteslice(offset, request.bytesize - offset))
+  offset += written
+end
 
 response = ""
 loop do
