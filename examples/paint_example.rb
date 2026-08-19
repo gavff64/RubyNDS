@@ -18,12 +18,12 @@ def puts(*args)
   end
 end
 
-KEY_A      = 1 << 0
-KEY_B      = 1 << 1
-KEY_START  = 1 << 3
-KEY_X      = 1 << 10
-KEY_Y      = 1 << 11
-KEY_TOUCH  = 1 << 14
+KEY_A = 1 << 0
+KEY_B = 1 << 1
+KEY_START = 1 << 3
+KEY_X = 1 << 10
+KEY_Y = 1 << 11
+KEY_TOUCH = 1 << 14
 
 RED = Color.rgb(31, 0, 0)
 BLUE = Color.rgb(0, 0, 31)
