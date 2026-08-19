@@ -66,7 +66,7 @@ GREEN = Color.rgb(0, 31, 0)
 GRAY = Color.rgb(24, 24, 24)
 BLACK = Color.rgb(0, 0, 0)
 
-def puts(*args)
+def puts(*args) # The splat is because puts can take in multiple arguments. Point is auto newline though.
   args.each do |a|
     print(a.to_s + "\n")
   end
