@@ -9,3 +9,10 @@ I wanted to write homebrew apps for DSi using a favorable language. And since I 
 So the goal is to have the C side of this project be as thin as possible. Not only does this make the inner workings more legible for me, but it also ensures practically all of the logic is pure self-written Ruby (excluding the [pre-existing mrbgems](./gems/) of course). 
 
 This is only possible thanks to all of the DS native libraries and SDK components available like [libnds](https://github.com/devkitPro/libnds), [DSWiFi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod). And obviously [devkitPro](https://github.com/devkitPro) for even providing the cross-compilation tools and whatnot in the first place.
+
+## Goal
+DS hardware -> C Bindings -> Low-level runtime API exposed to Ruby (current) -> Pure Ruby high-level mrbgem
+
+The low-level runtime API attempts to closely mimic writing directly to hardware, while the high-level library API keeps Ruby idiomatic.
+
+One native C binding layer, two Ruby API layers.
