@@ -96,3 +96,37 @@ I wanted to write homebrew apps for the DSi using a favorable language. And sinc
 So the goal is that the C layer only exists as primitive bindings, and both Ruby API layers are self-made. The high-level Ruby API being a conglomeration of mrbgems that wrap one or more low-level Ruby API calls into much more idiomatic Ruby methods.
 
 This is only possible thanks to all of the DS native libraries and SDK components available like [libnds](https://github.com/devkitPro/libnds), [DSWiFi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod). And obviously [devkitPro](https://github.com/devkitPro) for even providing the cross-compilation tools and whatnot in the first place.
+
+## Setup
+
+**Requirements**:
+- [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `nds-dev` package group
+- Ruby and Rake
+- Git, Make, and a host C compiler
+
+Clone [mruby 4.0.0](https://github.com/mruby/mruby) into the ignored `vendor` directory:
+
+```sh
+mkdir -p vendor
+git clone --depth 1 --branch 4.0.0 \
+  https://github.com/mruby/mruby.git vendor/mruby
+```
+
+Then build an application:
+
+```sh
+make GAME=path/to/something/example.rb
+```
+
+The resulting ROM will be written to:
+
+```text
+example.nds
+```
+
+Be sure to run a clean build after every modification:
+
+```sh
+make clean
+make GAME=path/to/something/example.rb
+```
