@@ -150,3 +150,9 @@ RubyNDS is built on the work of many open-source projects:
 - Krzysztof Gabis for Parson, used by `mruby-json`.
 
 All third-party components remain the property of their respective authors and are distributed under their respective licenses.
+
+## License
+
+RubyNDS is available under the [MIT License](./LICENSE).
+
+You don't have to, but if you use RubyNDS for anything, please let me know! I'd love to see. 🙂
