@@ -91,7 +91,7 @@ puts HTTP.get("wttr.in/NewYork?format=3") # Response has header auto-trimmed
 > See more low-level and high-level Ruby-only examples in [examples](./examples/)
 
 ## What's the purpose?
-I wanted to write homebrew apps for the DSi using a favorable language. And since I don't really know C, I wanted to avoid having an LLM create an entire framework for me. Not only is that pretty lame, but I learn nothing in the process as the majority of the hard work is done.
+I wanted to write homebrew apps for the DSi using a favorable language. And since I don't really know any C, I wanted to avoid having an LLM create an entire framework for me. Not only is that pretty lame, but I learn nothing in the process as the majority of the hard work is done.
 
 So the goal is that the C layer only exists as primitive bindings, and both Ruby API layers are self-made. The high-level Ruby API being a conglomeration of mrbgems that wrap one or more low-level Ruby API calls into much more idiomatic Ruby methods.
 
