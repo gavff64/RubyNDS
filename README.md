@@ -1,14 +1,18 @@
+<div align="center">
+
 # RubyNDS
 Write DS Homebrew apps in pure Ruby!
 
 <img width="235" height="360" alt="video" src="https://github.com/user-attachments/assets/0fa1c674-4b7e-43a6-96b7-38bbc3ca556a" />
 
+</div>
+
 ## What is this?
-RubyNDS is an SDK which includes an embedded mruby runtime, thin bindings to native DS libraries, build tools and examples. There is both a **low-level Ruby API** for verbosity, and an idiomatic **high-level Ruby API** for developer happiness. The focus is DSi development, but inheriently RubyNDS applications will run on 3DS/2DS/DS as well.
+RubyNDS is an SDK which includes an embedded mruby runtime, thin bindings to native DS libraries, build tooling and examples. There is both a **low-level Ruby API** for finer-grained control without C, and an idiomatic **high-level Ruby API** for developer happiness. The focus is DSi development, but inherently *most* RubyNDS applications will run on DS/2DS/3DS as well.
 
 <div align="center">
   
-| DS hardware -> Thin C bindings -> Low-level Ruby API -> High-level Ruby API |
+| DS hardware -> Native DS Libraries -> Thin C bindings -> Low-level Ruby API -> High-level Ruby API |
 | --- |
 
 </div>
@@ -18,12 +22,13 @@ RubyNDS is an SDK which includes an embedded mruby runtime, thin bindings to nat
 These 3 scripts all do the same thing. 
 - Connect to wifi
 - Fetch some data
-- libnds displays it to the on-screen DS console (unparsed)
+- Display the result through the libnds on-screen console (unparsed)
 
 Here's the ***scary*** C example:
 
 ```c
-// This specific example is generated. Please read "What's the purpose?" in this README to understand why.
+// This specific example is generated.
+// Please read "What's the purpose?" in this README to understand why.
 Wifi_InitDefault(WFC_CONNECT);
 
 struct hostent *host = gethostbyname("wttr.in");
@@ -80,15 +85,14 @@ Net.close(sock)
 Then again using the beautiful **high-level Ruby API**:
 
 ```ruby
-puts HTTP.get("wttr.in/NewYork?format=3")
+puts HTTP.get("wttr.in/NewYork?format=3") # Response has header auto-trimmed
 ```
 
-> See more in [examples](./examples/)
+> See more low-level and high-level Ruby-only examples in [examples](./examples/)
 
 ## What's the purpose?
-I wanted to write homebrew apps for DSi using a favorable language. And since I don't really know C, I wanted to avoid having an LLM create an entire framework for me. Not only is that pretty lame, but I learn nothing in the process as the majority of the hard work is done.
+I wanted to write homebrew apps for the DSi using a favorable language. And since I don't really know C, I wanted to avoid having an LLM create an entire framework for me. Not only is that pretty lame, but I learn nothing in the process as the majority of the hard work is done.
 
-So the goal is to have the C side of this project be as thin as possible. Not only does this make the inner workings more legible for me, but it also ensures all of the API logic is pure self-written Ruby. 
+So the goal is that the C layer only exists as primitive bindings, and both Ruby API layers are self-made. The high-level Ruby API being a conglomeration of mrbgems that wrap one or more low-level Ruby API calls into much more idiomatic Ruby methods.
 
 This is only possible thanks to all of the DS native libraries and SDK components available like [libnds](https://github.com/devkitPro/libnds), [DSWiFi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod). And obviously [devkitPro](https://github.com/devkitPro) for even providing the cross-compilation tools and whatnot in the first place.
-
