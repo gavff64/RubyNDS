@@ -1,9 +1,3 @@
-def puts(*args)
-  args.each do |arg|
-    print(arg.to_s + "\n")
-  end
-end
-
 Net.wifi
 HOST = "wttr.in"
 PORT = 80

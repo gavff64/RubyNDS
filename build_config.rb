@@ -32,4 +32,6 @@ MRuby::CrossBuild.new("nds") do |conf|
   conf.gem "gems/mruby-json"
   conf.gem "gems/mruby-onig-regexp"
   conf.gem "gems/mruby-ansi-colors"
+  conf.gem "gems/mruby-puts"
+  conf.gem "gems/rubynds_http"
 end

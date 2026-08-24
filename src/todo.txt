@@ -1,0 +1,1 @@
+"connected?" c primitive, then update http.rb to handle wifi disconnects/reconnects.

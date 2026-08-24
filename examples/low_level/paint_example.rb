@@ -12,12 +12,6 @@ module Color
   end
 end
 
-def puts(*args)
-  args.each do |a|
-    print(a.to_s + "\n")
-  end
-end
-
 KEY_A = 1 << 0
 KEY_B = 1 << 1
 KEY_START = 1 << 3

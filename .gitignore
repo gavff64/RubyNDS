@@ -1,6 +1,7 @@
 *.nds
 /build/
 /vendor/
+/custom_gem_tests/
 build_config.rb.lock
 *.o
 *.elf
