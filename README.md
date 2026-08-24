@@ -97,14 +97,21 @@ So the goal is that the C layer only exists as primitive bindings, and both Ruby
 
 This is only possible thanks to all of the DS native libraries and SDK components available like [libnds](https://github.com/devkitPro/libnds), [DSWiFi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod). And obviously [devkitPro](https://github.com/devkitPro) for even providing the cross-compilation tools and whatnot in the first place.
 
+Wicked.
+<div align="right">
+<img width="200" height="150" alt="love" src="https://github.com/user-attachments/assets/ae9978c5-d18c-4472-98cc-5401e69c7e5e" />
+</div>
+
+<div align="center">
+
 ## Setup
 
-**Requirements**:
-- [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `nds-dev` package group
-- Ruby and Rake
-- Git, Make, and a host C compiler
+| Requires: [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `nds-dev` package group |
+| --- |
 
-Clone [mruby 4.0.0](https://github.com/mruby/mruby) into the ignored `vendor` directory:
+</div>
+
+1. Clone [mruby 4.0.0](https://github.com/mruby/mruby) into the ignored `vendor` directory:
 
 ```sh
 mkdir -p vendor
@@ -112,19 +119,19 @@ git clone --depth 1 --branch 4.0.0 \
   https://github.com/mruby/mruby.git vendor/mruby
 ```
 
-Then build an application:
+2. Then build an application:
 
 ```sh
 make GAME=path/to/something/example.rb
 ```
 
-The resulting ROM will be written to:
+3. The resulting ROM will be written to:
 
 ```text
 example.nds
 ```
 
-Be sure to run a clean build after every modification:
+4. Be sure to run a clean build after every modification:
 
 ```sh
 make clean
