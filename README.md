@@ -1,7 +1,7 @@
 <div align="center">
 
 # RubyNDS
-Write DS Homebrew apps in pure Ruby!
+Write DSi Homebrew apps in pure Ruby!
 
 <img width="235" height="360" alt="video" src="https://github.com/user-attachments/assets/0fa1c674-4b7e-43a6-96b7-38bbc3ca556a" />
 
