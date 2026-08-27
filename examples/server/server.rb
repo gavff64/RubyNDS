@@ -9,9 +9,7 @@ abort "music.pcm not found" unless File.exist?(pcm)
 server = WEBrick::HTTPServer.new(Port: 8123, DocumentRoot: __dir__)
 
 ["INT", "TERM"].each do |signal|
-  Signal.trap(signal) do
-    server.shutdown
-  end
+  Signal.trap(signal) { exit! 0 }
 end
 
 puts "Serving music.pcm on port 8123"

@@ -31,6 +31,7 @@ end
 
 pending = buffer.byteslice(header_end + 4, buffer.bytesize - header_end - 4) || ""
 
+puts "Audio streaming through HTTP..."
 Audio.open(sample_rate: 32000, bits: 16, channels: 2)
 Net.nonblock(sock, true)
 eof = false

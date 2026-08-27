@@ -1,3 +1,0 @@
-"connected?" c primitive, then update http.rb to handle wifi disconnects/reconnects.
-
-Possibly re-word in the README "low-level ruby api"/"c bindings" as they're not necessarily 2 separate things

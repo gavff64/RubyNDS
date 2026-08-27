@@ -32,7 +32,7 @@ static mrb_value net_dns(mrb_state *mrb, mrb_value self)
 {
   mrb_value host;
   mrb_get_args(mrb, "S", &host);
-  struct hostent *h = gethostbyname(RSTRING_PTR(host));
+  struct hostent *h = gethostbyname(mrb_string_cstr(mrb, host));
   if (!h || !h->h_addr_list[0])
     mrb_raise(mrb, E_RUNTIME_ERROR, "Net.dns: host not found");
   return mrb_str_new_cstr(mrb, inet_ntoa(*(struct in_addr *)h->h_addr_list[0]));
@@ -47,7 +47,7 @@ static mrb_value net_connect(mrb_state *mrb, mrb_value self)
   if (port < 0 || port > 65535)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Net.connect: port must be 0..65535");
 
-  struct hostent *h = gethostbyname(RSTRING_PTR(host));
+  struct hostent *h = gethostbyname(mrb_string_cstr(mrb, host));
   if (!h || !h->h_addr_list[0])
     mrb_raise(mrb, E_RUNTIME_ERROR, "Net.connect: host not found");
 
