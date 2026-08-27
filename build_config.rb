@@ -29,6 +29,7 @@ MRuby::CrossBuild.new("nds") do |conf|
   conf.disable_cxx_exception
 
   conf.gembox "stdlib"
+  conf.gem :core => "mruby-math"
   conf.gem "gems/mruby-json"
   conf.gem "gems/mruby-onig-regexp"
   conf.gem "gems/mruby-ansi-colors"

@@ -22,6 +22,7 @@ MAGENTA = Color.rgb(31, 0, 31)
 LIME = Color.rgb(16, 31, 0)
 MAROON = Color.rgb(16, 0, 0)
 OLIVE = Color.rgb(16, 16, 0)
+GAVFF_GREEN = Color.rgb(9, 14, 1)
 NAVY = Color.rgb(0, 0, 16)
 TEAL = Color.rgb(0, 16, 16)
 GOLD = Color.rgb(31, 26, 0)
@@ -36,7 +37,22 @@ DARK_GREEN = Color.rgb(0, 16, 0)
 DARK_BLUE = Color.rgb(0, 0, 16)
 
 module Draw
+  def self.pixel(x, y, color)
+    Gfx.fill_rect(:top, x, y, 1, 1, color)
+  end
+
   def self.rectangle(x, y, width, height, color)
     Gfx.fill_rect(:top, x, y, width, height, color)
+  end
+
+  def self.circle(x, y, size, color)
+    360.times do |degrees|
+      angle = degrees * Math::PI / 180
+
+      point_x = x + size * Math.cos(angle)
+      point_y = y + size * Math.sin(angle)
+
+      Draw.pixel(point_x, point_y, color)
+    end
   end
 end
