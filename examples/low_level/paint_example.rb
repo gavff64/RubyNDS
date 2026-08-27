@@ -1,11 +1,5 @@
 # Check generic_testing.rb for info on bits/what this means
 
-module Input
-  def self.down?(key)
-    (down & key) != 0
-  end
-end
-
 module Color
   def self.rgb(r, g, b)
     (r & 31) | ((g & 31) << 5) | ((b & 31) << 10) | (1 << 15)
@@ -46,11 +40,12 @@ print("Current color: #{"red".red}")
 current_color = RED
 while System.main_loop?
   Input.update
-  (current_color = RED; print("\r\e[2KCurrent color: #{"red".red}")) if Input.down?(KEY_A)
-  (current_color = BLUE; print("\r\e[2KCurrent color: #{"blue".blue}")) if Input.down?(KEY_B)
-  (current_color = GREEN; print("\r\e[2KCurrent color: #{"green".green}")) if Input.down?(KEY_X)
-  (current_color = BLACK; print("\r\e[2KCurrent color: None (eraser)")) if Input.down?(KEY_Y)
-  Gfx.fill_rect(:top, 0, 0, 256, 192, BLACK) if Input.down?(KEY_START)
+  down = Input.down
+  (current_color = RED; print("\r\e[2KCurrent color: #{"red".red}")) if (down & KEY_A) != 0
+  (current_color = BLUE; print("\r\e[2KCurrent color: #{"blue".blue}")) if (down & KEY_B) != 0
+  (current_color = GREEN; print("\r\e[2KCurrent color: #{"green".green}")) if (down & KEY_X) != 0
+  (current_color = BLACK; print("\r\e[2KCurrent color: None (eraser)")) if (down & KEY_Y) != 0
+  Gfx.fill_rect(:top, 0, 0, 256, 192, BLACK) if (down & KEY_START) != 0
 
   if Input.touch?
     x = Input.touch_x

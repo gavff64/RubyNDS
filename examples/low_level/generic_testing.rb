@@ -69,6 +69,7 @@ BLACK = Color.rgb(0, 0, 0)
 while System.main_loop?
   Input.update
 
+  # x, y, width, height, color
   (puts("A is pressed"); Gfx.fill_rect(:top, 10, 20, 50, 30, RED)) if Input.down?(KEY_A)
   (puts("B is pressed"); Gfx.fill_rect(:top, 20, 40, 50, 30, YELLOW)) if Input.down?(KEY_B)
   (puts("X is pressed"); Gfx.fill_rect(:top, 40, 80, 50, 30, BLUE)) if Input.down?(KEY_X)
