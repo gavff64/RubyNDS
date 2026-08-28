@@ -10,6 +10,7 @@ MRuby::Gem::Specification.new('mruby-onig-regexp') do |spec|
     visualcpp = ENV['VisualStudioVersion'] || ENV['VSINSTALLDIR']
 
     require 'open3'
+    require 'rbconfig'
 
     # remove libonig, instead link directly against pthread
     unless ENV['OS'] == 'Windows_NT' || build.kind_of?(MRuby::CrossBuild)
@@ -61,12 +62,13 @@ MRuby::Gem::Specification.new('mruby-onig-regexp') do |spec|
           'AR' => build.archiver.command }
         unless ENV['OS'] == 'Windows_NT'
           if build.kind_of? MRuby::CrossBuild
+            build_host = "--build #{RbConfig::CONFIG['build']}"
             host = "--host #{build.host_target ? build.host_target : build.name}"
           end
 
           _pp 'autotools', oniguruma_dir
           run_command e, './autogen.sh' if File.exist? 'autogen.sh'
-          run_command e, "./configure --disable-shared --enable-static #{host}"
+          run_command e, "./configure --disable-shared --enable-static #{build_host} #{host}"
           run_command e, "make -j#{$rake_jobs || 1} libonigmo.la onigmo.pc"
         else
           run_command e, 'cmd /c "copy /Y win32 > NUL"'

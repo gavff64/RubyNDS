@@ -1,25 +1,15 @@
 module Audio # this is an extension layer. The C binding already has .open, .update, .close, .volume defined.
-  ASSETS = {
-    "sneaky_song.pcm" => { type: :stream },
-    "vine_boom.pcm" => { type: :effect, sample_rate: 16000 },
-    "bruh.pcm" => { type: :effect, sample_rate: 16000 }
-  }
-
   @playing = false
   @pending = ""
   @eof = false
   @stream = nil
 
-  def self.load(audio)
+  def self.load(audio, stream: false, sample_rate: 32000)
     if audio.is_a?(String)
-      asset = ASSETS[audio]
-      raise "Unknown audio asset: #{audio}" unless asset
+      path = audio.start_with?("nitro:/") ? audio : "nitro:/#{audio}"
 
-      if asset[:type] == :stream
-        return PCMFile.new("nitro:/#{audio}")
-      else
-        return Audio.sample_load(load_pcm("nitro:/#{audio}"), sample_rate: asset[:sample_rate])
-      end
+      return PCMFile.new(path, sample_rate) if stream
+      return Audio.sample_load(load_pcm(path), sample_rate: sample_rate)
     end
 
     audio
@@ -31,7 +21,8 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
     unless @playing && @stream == audio
       stop if @playing
 
-      Audio.open(sample_rate: 32000, bits: 16, channels: 2)
+      sample_rate = audio.is_a?(PCMFile) ? audio.sample_rate : 32000
+      Audio.open(sample_rate: sample_rate, bits: 16, channels: 2)
       @stream = audio
       @pending = ""
       @eof = false
@@ -80,9 +71,14 @@ end
 
 module Audio # I know this is kinda weird to specify twice, looks cleaner to me. Might refactor.
   class PCMFile
-    def initialize(path)
+    def initialize(path, sample_rate)
       @file = FS.open(path)
+      @sample_rate = sample_rate
       @closed = false
+    end
+
+    def sample_rate
+      @sample_rate
     end
 
     def read(maxlen = 4096)
