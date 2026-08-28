@@ -93,11 +93,13 @@ puts HTTP.get("wttr.in/NewYork?format=3") # Response has header auto-trimmed
 ## What's the purpose?
 I wanted to write homebrew apps for the DSi using a favorable language. And since I don't really know any C, I wanted to avoid having an LLM create an entire framework for me. Not only is that pretty lame, but I learn nothing in the process as the majority of the hard work is done.
 
-So the goal is that the C layer only exists as primitive bindings, and both Ruby API layers are self-made/self-designed. The high-level Ruby API being a conglomeration of mrbgems that wrap one or more low-level Ruby API calls into much more idiomatic Ruby methods.
+So the goal is that the C layer only exists as primitive bindings to a small-ish low-level Ruby API, which I've attempted to design myself, but haven't written myself since it's obviously in a language I don't know. The high-level Ruby API is a conglomeration of mrbgems that wrap one or more low-level Ruby API calls into much more idiomatic Ruby methods. Fortunately for me, that is pure Ruby that I get to write! (trust me, you can tell.)
 
-This is only possible thanks to all of the DS native libraries and SDK components available like [libnds](https://github.com/devkitPro/libnds), [DSWiFi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod). And obviously [devkitPro](https://github.com/devkitPro) for even providing the cross-compilation tools and whatnot in the first place.
+For full transparency sake. I am crudely punching above my weight with this project. What I thought was going to be some tiny bindings to allow me to write small homebrew projects turned into a full SDK. I'm researching and learning on the fly, so be aware that many concepts and implementations will not be strong. I am merely a hobbiest Ruby programmer 🥀
 
-Wicked.
+That being said. This is only possible thanks to all of the DS native libraries and SDK components available like [libnds](https://github.com/devkitPro/libnds), [DSWiFi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod). And obviously [devkitPro](https://github.com/devkitPro) for even providing the cross-compilation tools and whatnot in the first place.
+
+Thank you for reading.
 <div align="right">
 <img width="200" height="150" alt="love" src="https://github.com/user-attachments/assets/ae9978c5-d18c-4472-98cc-5401e69c7e5e" />
 </div>
