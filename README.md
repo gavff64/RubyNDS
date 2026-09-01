@@ -140,49 +140,6 @@ make clean
 make GAME=path/to/something/example.rb
 ```
 
-## Assets
-
-Place normal media files in `assets`. The build requires FFmpeg and converts them into DS-ready files before packaging NitroFS. Source files are not included in the ROM.
-
-- PNG, JPEG, BMP and WebP become RGB15 images.
-- GIF, MP4, MOV, MKV, WebM and AVI become RGB15 video capped at 30 FPS.
-- WAV, MP3, FLAC, OGG, M4A and AAC become 32 kHz PCM8, mono for effects and stereo for streams.
-- Other files are copied unchanged.
-
-Images and videos larger than 256x192 are scaled down without changing their aspect ratio.
-R15I and R15V files are private build products and remain inside `build`.
-
-```ruby
-image = Draw.load("picture.png")
-
-while System.main_loop?
-  Draw.image(image, 0, 0)
-  System.vblank
-end
-```
-
-```ruby
-video = Draw.load("movie.mp4")
-audio = Audio.load("movie.mp4", stream: true)
-
-while System.main_loop?
-  Audio.play(audio)
-  Draw.video(video)
-  System.vblank
-end
-```
-
-Image and video helpers are provided by `rubynds-draw`. When a video contains audio, the build creates a PCM stream with the same source name. Playing that stream before drawing the video keeps them synchronized. Videos without audio use a silent playback clock.
-
-```ruby
-music = Audio.load("music.mp3", stream: true)
-
-while System.main_loop?
-  Audio.play(music)
-  System.vblank
-end
-```
-
 ## Formal Acknowledgements
 
 RubyNDS is built on the work of many open-source projects:
