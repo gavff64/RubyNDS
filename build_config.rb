@@ -38,4 +38,6 @@ MRuby::CrossBuild.new("nds") do |conf|
   conf.gem "gems/rubynds-audio"
   conf.gem "gems/rubynds-input"
   conf.gem "gems/rubynds-draw"
+  conf.gem "gems/rubynds-json-helper"
+  conf.gem "gems/rubynds-timer"
 end
