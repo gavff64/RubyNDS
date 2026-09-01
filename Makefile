@@ -10,9 +10,12 @@ APP_BUILD   := $(BUILD)/$(NAME)
 MRUBY_BUILD := $(abspath $(BUILD)/mruby)
 MRUBY_LIB   := $(MRUBY_BUILD)/nds/lib/libmruby.a
 MRBC        := $(MRUBY_BUILD)/host/bin/mrbc
+ASSET_BUILD := $(BUILD)/assets
+ASSET_STAMP := $(BUILD)/.assets-built
 
 CC      := $(DEVKITARM)/bin/arm-none-eabi-gcc
 NDSTOOL := $(DEVKITPRO)/tools/bin/ndstool
+RUBY    ?= ruby
 
 ARCH := -march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
 CPPFLAGS := -D__NDS__ -DARM9 -DMRB_INT32 -DMRB_USE_FLOAT32 \
@@ -30,7 +33,7 @@ BINDINGS := src/main.c src/bindings_net.c src/bindings_input.c \
 	src/bindings_system.c
 OBJECTS := $(BINDINGS:src/%.c=$(BUILD)/%.o)
 
-NITROFS_FILES := $(wildcard assets/*)
+NITROFS_FILES := $(shell find assets -type f -o -type d)
 
 .DEFAULT_GOAL := all
 .DELETE_ON_ERROR:
@@ -47,6 +50,11 @@ $(BUILD)/.mruby-built: build_config.rb
 
 $(MRBC) $(MRUBY_LIB): $(BUILD)/.mruby-built
 
+$(ASSET_STAMP): tools/assets.rb $(NITROFS_FILES)
+	mkdir -p $(BUILD)
+	$(RUBY) tools/assets.rb assets $(ASSET_BUILD)
+	touch $@
+
 $(APP_BUILD)/app_bytecode.c: $(GAME) $(MRBC)
 	mkdir -p $(APP_BUILD)
 	$(MRBC) -Bapp_bytecode -o $@ $<
@@ -60,11 +68,11 @@ $(APP_BUILD)/app_bytecode.o: $(APP_BUILD)/app_bytecode.c
 $(APP_BUILD)/$(NAME).elf: $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(MRUBY_LIB)
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(LDLIBS)
 
-$(NAME).nds: $(APP_BUILD)/$(NAME).elf $(NITROFS_FILES)
+$(NAME).nds: $(APP_BUILD)/$(NAME).elf $(ASSET_STAMP)
 	$(NDSTOOL) -c $@ -9 $< \
 		-7 $(DEVKITPRO)/calico/bin/ds7_maine.elf \
 		-b $(DEVKITPRO)/calico/share/nds-icon.bmp "$(NAME);Ruby on Nintendo DS;dsi-ruby" \
-		-d assets
+		-d $(ASSET_BUILD)
 
 clean:
 	rm -rf $(BUILD) *.nds

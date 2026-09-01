@@ -9,3 +9,5 @@ build_config.rb.lock
 .DS_Store
 *~
 *.swp
+/assets/**
+!/assets/README.md

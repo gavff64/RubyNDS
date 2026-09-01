@@ -10,6 +10,7 @@
 
 #define AUDIO_MAX_RATE 32768
 #define AUDIO_MAX_SAMPLES 16
+#define AUDIO_SAMPLE_8BIT 0
 #define AUDIO_SAMPLE_16BIT 1
 #define AUDIO_SAMPLE_REPEAT 1
 #define AUDIO_SAMPLE_ONCE 2
@@ -72,14 +73,25 @@ static mm_word audio_fill(mm_word length, mm_addr dest, mm_stream_formats format
   if (take > 0) {
     const u8 *src = s_audio.feed + s_audio.feed_consumed;
     if (vol != 1024) {
-      s16 *dst = (s16 *)out;
-      u32 frames = take / 2;
-      for (u32 i = 0; i < frames; i++) {
-        s32 s = ((const s16 *)src)[i];
-        s = (s * (s32)vol) >> 10;
-        if (s > 32767) s = 32767;
-        if (s < -32768) s = -32768;
-        dst[i] = (s16)s;
+      if (s_audio.bits == 8) {
+        for (u32 i = 0; i < take; i++) {
+          s32 s = ((const s8 *)src)[i];
+          s = (s * (s32)vol) >> 10;
+          if (s > 127) s = 127;
+          if (s < -128) s = -128;
+          ((s8 *)out)[i] = (s8)s;
+        }
+      }
+      else {
+        s16 *dst = (s16 *)out;
+        u32 frames = take / 2;
+        for (u32 i = 0; i < frames; i++) {
+          s32 s = ((const s16 *)src)[i];
+          s = (s * (s32)vol) >> 10;
+          if (s > 32767) s = 32767;
+          if (s < -32768) s = -32768;
+          dst[i] = (s16)s;
+        }
       }
     }
     else {
@@ -112,8 +124,8 @@ static mrb_value audio_open(mrb_state *mrb, mrb_value self)
 
   if (rate < 1024 || rate > AUDIO_MAX_RATE)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: sample_rate must be 1024..32768");
-  if (bits != 16)
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: only 16-bit PCM is supported");
+  if (bits != 8 && bits != 16)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: bits must be 8 or 16");
   if (channels != 1 && channels != 2)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: channels must be 1 or 2");
 
@@ -133,7 +145,10 @@ static mrb_value audio_open(mrb_state *mrb, mrb_value self)
   stream.sampling_rate = (mm_word)rate;
   stream.buffer_length = 4096;
   stream.callback = audio_fill;
-  stream.format = channels == 2 ? MM_STREAM_16BIT_STEREO : MM_STREAM_16BIT_MONO;
+  if (bits == 8)
+    stream.format = channels == 2 ? MM_STREAM_8BIT_STEREO : MM_STREAM_8BIT_MONO;
+  else
+    stream.format = channels == 2 ? MM_STREAM_16BIT_STEREO : MM_STREAM_16BIT_MONO;
   stream.manual = true;
   mmStreamOpen(&stream);
 
@@ -162,8 +177,8 @@ static mrb_value audio_sample_load(mrb_state *mrb, mrb_value self)
 
   if (rate < 1024 || rate > AUDIO_MAX_RATE)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: sample_rate must be 1024..32768");
-  if (bits != 16)
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: only 16-bit PCM is supported");
+  if (bits != 8 && bits != 16)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: bits must be 8 or 16");
   if (length <= 0 || length % 4 != 0)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: byte length must be a positive multiple of 4");
 
@@ -186,7 +201,7 @@ static mrb_value audio_sample_load(mrb_state *mrb, mrb_value self)
   memset(slot, 0, sizeof *slot);
   slot->sample.loop_start = 0;
   slot->sample.length = (mm_word)length / 4;
-  slot->sample.format = AUDIO_SAMPLE_16BIT;
+  slot->sample.format = bits == 8 ? AUDIO_SAMPLE_8BIT : AUDIO_SAMPLE_16BIT;
   slot->sample.repeat_mode = loop ? AUDIO_SAMPLE_REPEAT : AUDIO_SAMPLE_ONCE;
   slot->sample.base_rate = (mm_hword)((u32)rate * 1024 / 32768);
   slot->sample.data = copy;
