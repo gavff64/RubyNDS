@@ -31,7 +31,10 @@ int main(void)
     register_system_bindings(mrb);
 
     mrb_load_irep(mrb, app_bytecode);
-    if (mrb->exc) mrb_print_error(mrb);
+    if (mrb->exc) {
+      consoleDemoInit();
+      mrb_print_error(mrb);
+    }
 
     video_shutdown();
     audio_shutdown();

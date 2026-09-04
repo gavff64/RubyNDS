@@ -150,6 +150,7 @@ RubyNDS is built on the work of many open-source projects:
 - Ralph Desir (`Mav7`) for `mruby-ansi-colors`.
 - K. Takata and K. Kosako for Onigmo and Oniguruma, used by `mruby-onig-regexp`.
 - Krzysztof Gabis for Parson, used by `mruby-json`.
+- Ariya Hidayat for [FastLZ](https://github.com/ariya/FastLZ), used by R15V video.
 
 All third-party components remain the property of their respective authors and are distributed under their respective licenses.
 

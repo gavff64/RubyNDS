@@ -98,8 +98,8 @@ module Draw
     Image.new(path)
   end
 
-  def self.image(image, x, y)
-    Gfx.blit(:top, x, y, image.width, image.height, image.pixels)
+  def self.image(image, x, y, screen = :top)
+    Gfx.blit(screen, x, y, image.width, image.height, image.pixels)
   end
 
   def self.video(video, x = nil, y = nil)
@@ -130,22 +130,22 @@ module Draw
     @video = nil
   end
 
-  def self.pixel(x, y, color)
-    Gfx.fill_rect(:top, x, y, 1, 1, color)
+  def self.pixel(x, y, color, screen = :top)
+    Gfx.fill_rect(screen, x, y, 1, 1, color)
   end
 
-  def self.rectangle(x, y, width, height, color)
-    Gfx.fill_rect(:top, x, y, width, height, color)
+  def self.rectangle(x, y, width, height, color, screen = :top)
+    Gfx.fill_rect(screen, x, y, width, height, color)
   end
 
-  def self.circle(x, y, size, color) # unfilled, sorta just testing
+  def self.circle(x, y, size, color, screen = :top) # unfilled, sorta just testing
     360.times do |degrees|
       angle = degrees * Math::PI / 180
 
       point_x = x + size * Math.cos(angle)
       point_y = y + size * Math.sin(angle)
 
-      Draw.pixel(point_x, point_y, color)
+      Draw.pixel(point_x, point_y, color, screen)
     end
   end
 end
