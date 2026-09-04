@@ -25,6 +25,7 @@ int main(void)
     register_net_bindings(mrb);
     register_input_bindings(mrb);
     register_gfx_bindings(mrb);
+    register_video_bindings(mrb);
     register_fs_bindings(mrb);
     register_audio_bindings(mrb);
     register_system_bindings(mrb);
@@ -32,6 +33,7 @@ int main(void)
     mrb_load_irep(mrb, app_bytecode);
     if (mrb->exc) mrb_print_error(mrb);
 
+    video_shutdown();
     audio_shutdown();
     fs_shutdown();
     mrb_close(mrb);

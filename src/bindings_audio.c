@@ -307,14 +307,23 @@ static mrb_value audio_update(mrb_state *mrb, mrb_value self)
     audio_raise_closed(mrb);
 
   mrb_value data;
-  mrb_get_args(mrb, "S", &data);
+  mrb_int offset = 0;
+  mrb_int length = -1;
+  mrb_get_args(mrb, "S|ii", &data, &offset, &length);
 
-  if (RSTRING_LEN(data) % s_audio.sample_bytes != 0)
+  if (offset < 0 || offset > RSTRING_LEN(data))
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.update: invalid offset");
+  if (length < 0)
+    length = RSTRING_LEN(data) - offset;
+  if (length < 0 || length > RSTRING_LEN(data) - offset)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.update: invalid length");
+
+  if (length % s_audio.sample_bytes != 0)
     mrb_raise(mrb, E_ARGUMENT_ERROR,
               "Audio.update: byte length must be a multiple of the frame size");
 
-  s_audio.feed = (const u8 *)RSTRING_PTR(data);
-  s_audio.feed_len = (u32)RSTRING_LEN(data);
+  s_audio.feed = (const u8 *)RSTRING_PTR(data) + offset;
+  s_audio.feed_len = (u32)length;
   s_audio.feed_consumed = 0;
   mmStreamUpdate();
   s_audio.feed = NULL;
@@ -367,7 +376,7 @@ void register_audio_bindings(mrb_state *mrb)
 {
   struct RClass *audio = mrb_define_module(mrb, "Audio");
   mrb_define_module_function(mrb, audio, "open",   audio_open,   MRB_ARGS_KEY(3, 0));
-  mrb_define_module_function(mrb, audio, "update", audio_update, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, audio, "update", audio_update, MRB_ARGS_ARG(1, 2));
   mrb_define_module_function(mrb, audio, "volume=", audio_set_volume, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, audio, "close",  audio_close,  MRB_ARGS_NONE());
   mrb_define_module_function(mrb, audio, "sample_load", audio_sample_load, MRB_ARGS_REQ(1) | MRB_ARGS_KEY(3, 0));

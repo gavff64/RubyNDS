@@ -11,6 +11,7 @@
 #define GFX_PITCH_PX 256
 
 static u16 *s_fb = NULL;
+static bool s_video = false;
 
 void gfx_init(void)
 {
@@ -18,6 +19,45 @@ void gfx_init(void)
   vramSetBankA(VRAM_A_MAIN_BG);
   int bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
   s_fb = bgGetGfxPtr(bg);
+}
+
+u8 *gfx_video_begin(const u16 *palette)
+{
+  int bg = bgInit(3, BgType_Bmp8, BgSize_B8_256x256, 0, 0);
+  u8 *framebuffer = (u8 *)bgGetGfxPtr(bg);
+  int background = 0;
+  int darkness = 94;
+
+  for (int i = 0; i < 256; i++) {
+    int color = palette[i];
+    int value = (color & 31) + (color >> 5 & 31) + (color >> 10 & 31);
+    if (value < darkness) {
+      background = i;
+      darkness = value;
+    }
+  }
+
+  DC_FlushRange(palette, 512);
+  dmaCopy(palette, BG_PALETTE, 512);
+  dmaFillWords((u32)background * 0x01010101, framebuffer, 256 * 256);
+  s_video = true;
+  return framebuffer;
+}
+
+void gfx_video_end(void)
+{
+  if (!s_video)
+    return;
+  int bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
+  s_fb = bgGetGfxPtr(bg);
+  dmaFillWords(0, s_fb, 256 * 256 * 2);
+  s_video = false;
+}
+
+static void check_video_closed(mrb_state *mrb)
+{
+  if (s_video)
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Gfx: drawing is unavailable while video is open");
 }
 
 static void check_screen_is_top(mrb_state *mrb, mrb_value v)
@@ -43,6 +83,7 @@ static mrb_value gfx_blit(mrb_state *mrb, mrb_value self)
   mrb_int x, y, w, h;
   mrb_get_args(mrb, "oiiiiS", &screen_v, &x, &y, &w, &h, &pixels);
 
+  check_video_closed(mrb);
   check_screen_is_top(mrb, screen_v);
   check_rect(mrb, x, y, w, h);
 
@@ -65,6 +106,7 @@ static mrb_value gfx_fill_rect(mrb_state *mrb, mrb_value self)
   mrb_int x, y, w, h, color;
   mrb_get_args(mrb, "oiiiii", &screen_v, &x, &y, &w, &h, &color);
 
+  check_video_closed(mrb);
   check_screen_is_top(mrb, screen_v);
   check_rect(mrb, x, y, w, h);
 

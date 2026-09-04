@@ -5,6 +5,7 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
   @stream = nil
   @position = 0
   @bytes_per_second = 0
+  @offset = 0
 
   def self.load(audio, stream: false, sample_rate: 32000)
     if audio.is_a?(String)
@@ -41,11 +42,19 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
       @bytes_per_second = sample_rate * @frame_bytes
       @position = nil
       @pending = ""
+      @offset = 0
       @eof = false
       @playing = true
     end
 
-    unless @eof || @pending.bytesize >= 8192
+    available = @pending.bytesize - @offset
+
+    if @offset >= 16384
+      @pending = @pending.byteslice(@offset, available) || ""
+      @offset = 0
+    end
+
+    unless @eof || available >= 8192
       chunk = @stream.read
       if chunk == ""
         @eof = true
@@ -54,21 +63,21 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
       end
     end
 
-    playable = @pending.bytesize - (@pending.bytesize % @frame_bytes)
+    available = @pending.bytesize - @offset
+    playable = available - (available % @frame_bytes)
 
     if playable > 0
-      pcm = @pending.byteslice(0, playable)
-      used = Audio.update(pcm)
+      used = Audio.update(@pending, @offset, playable)
       if used > 0
         @position = -used if @position.nil?
         @position += used
-        @pending = @pending.byteslice(used, @pending.bytesize - used) || ""
+        @offset += used
       end
     else
       Audio.update("")
     end
 
-    stop if @eof && @pending.empty?
+    stop if @eof && @offset == @pending.bytesize
   end
 
   def self.playing?
@@ -90,6 +99,7 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
     Audio.close
     @stream = nil
     @pending = ""
+    @offset = 0
     @eof = false
     @position = 0
     @bytes_per_second = 0

@@ -8,6 +8,7 @@ AUDIO_EXTENSIONS = %w[.wav .mp3 .flac .ogg .m4a .aac]
 
 source = File.expand_path(ARGV.fetch(0))
 output = File.expand_path(ARGV.fetch(1))
+encoder = File.expand_path(ARGV.fetch(2))
 
 def run(*command)
   stdout, stderr, status = Open3.capture3(*command)
@@ -41,8 +42,8 @@ end
 
 def frame_rate(stream)
   numerator, denominator = stream.fetch("r_frame_rate").split("/").map(&:to_f)
-  rate = denominator == 0 ? 30 : (numerator / denominator).round
-  [[rate, 1].max, 30].min
+  rate = denominator == 0 ? 24 : (numerator / denominator).round
+  [[rate, 1].max, 24].min
 end
 
 def rgb15(rgba)
@@ -64,18 +65,6 @@ def rgb15(rgba)
   pixels.pack("v*")
 end
 
-def read_exact(io, length)
-  data = "".b
-
-  while data.bytesize < length
-    chunk = io.read(length - data.bytesize)
-    break if chunk.nil?
-    data << chunk
-  end
-
-  data
-end
-
 def convert_image(source, output)
   stream = video_stream(source)
   width, height = dimensions(stream)
@@ -88,41 +77,44 @@ def convert_image(source, output)
   File.binwrite(output, ["R15I", width, height].pack("a4v2") + rgb15(rgba))
 end
 
-def convert_video(source, output)
+def convert_video(source, output, encoder)
   stream = video_stream(source)
   width, height = dimensions(stream)
   rate = frame_rate(stream)
-  frame_bytes = width * height * 4
-  command = [
+  palette = "#{output}.palette.png"
+  palette_data = "#{output}.palette"
+
+  run(
     "ffmpeg", "-v", "error", "-nostdin", "-i", source,
-    "-map", "0:v:0", "-vf", "fps=#{rate},scale=#{width}:#{height}:flags=lanczos",
-    "-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"
+    "-map", "0:v:0", "-vf",
+    "fps=#{rate},scale=#{width}:#{height}:flags=lanczos,palettegen=max_colors=256",
+    "-frames:v", "1", "-y", palette
+  )
+
+  File.binwrite(
+    palette_data,
+    run(
+      "ffmpeg", "-v", "error", "-nostdin", "-i", palette,
+      "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb555le", "pipe:1"
+    )
+  )
+
+  filters = "[0:v:0]fps=#{rate},scale=#{width}:#{height}:flags=lanczos[v];" \
+    "[v][1:v:0]paletteuse=dither=bayer:bayer_scale=3[out]"
+  commands = [
+    [
+      "ffmpeg", "-v", "error", "-nostdin", "-i", source, "-i", palette,
+      "-filter_complex", filters, "-map", "[out]", "-an",
+      "-f", "rawvideo", "-pix_fmt", "rgb555le", "pipe:1"
+    ],
+    [encoder, width.to_s, height.to_s, rate.to_s, palette_data, output]
   ]
 
-  Open3.popen3(*command) do |stdin, stdout, stderr, wait|
-    stdin.close
-    error = Thread.new { stderr.read }
-    frames = 0
-
-    File.open(output, "wb") do |file|
-      file.write(["R15V", width, height, rate, 0].pack("a4v3V"))
-
-      loop do
-        rgba = read_exact(stdout, frame_bytes)
-        break if rgba.empty?
-        raise "invalid video data: #{source}" unless rgba.bytesize == frame_bytes
-        file.write(rgb15(rgba))
-        frames += 1
-      end
-
-      raise "invalid video data: #{source}" if frames == 0
-      file.seek(10)
-      file.write([frames].pack("V"))
-    end
-
-    message = error.value
-    raise message unless wait.value.success?
-  end
+  statuses = Open3.pipeline(*commands)
+  raise "video conversion failed: #{source}" unless statuses.all?(&:success?)
+ensure
+  FileUtils.rm_f(palette) if palette
+  FileUtils.rm_f(palette_data) if palette_data
 end
 
 def convert_audio(source, output, channels, duration = nil)
@@ -156,7 +148,7 @@ end
 
 FileUtils.mkdir_p(output)
 outputs = []
-compiler_time = File.mtime(__FILE__)
+compiler_time = [File.mtime(__FILE__), File.mtime(encoder)].max
 
 Dir.glob(File.join(source, "**", "*"), File::FNM_DOTMATCH).sort.each do |path|
   next unless File.file?(path)
@@ -188,7 +180,7 @@ Dir.glob(File.join(source, "**", "*"), File::FNM_DOTMATCH).sort.each do |path|
 
     unless File.exist?(video) && File.mtime(video) >= [File.mtime(path), compiler_time].max
       puts "video #{relative}"
-      compile(video) { |temporary| convert_video(path, temporary) }
+      compile(video) { |temporary| convert_video(path, temporary, encoder) }
     end
 
     if audio?(path)

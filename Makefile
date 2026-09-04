@@ -10,17 +10,21 @@ APP_BUILD   := $(BUILD)/$(NAME)
 MRUBY_BUILD := $(abspath $(BUILD)/mruby)
 MRUBY_LIB   := $(MRUBY_BUILD)/nds/lib/libmruby.a
 MRBC        := $(MRUBY_BUILD)/host/bin/mrbc
+MRUBY_GEMS  := $(shell find gems -type f)
 ASSET_BUILD := $(BUILD)/assets
 ASSET_STAMP := $(BUILD)/.assets-built
+VIDEO_ENCODER := $(BUILD)/r15v
 
 CC      := $(DEVKITARM)/bin/arm-none-eabi-gcc
 NDSTOOL := $(DEVKITPRO)/tools/bin/ndstool
 RUBY    ?= ruby
+HOSTCC  ?= cc
 
 ARCH := -march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
 CPPFLAGS := -D__NDS__ -DARM9 -DMRB_INT32 -DMRB_USE_FLOAT32 \
 	-I$(LIBNDS)/include -I$(DEVKITPRO)/calico/include \
-	-Ivendor/mruby/include -I$(MRUBY_BUILD)/nds/include
+	-Ivendor/mruby/include -I$(MRUBY_BUILD)/nds/include \
+	-Ithird_party/fastlz
 CFLAGS  := -O2 -Wall -ffunction-sections -fdata-sections -MMD -MP $(ARCH)
 LDFLAGS := -specs=$(DEVKITPRO)/calico/share/ds9.specs $(ARCH) \
 	-Wl,--gc-sections -Wl,-Map,$(APP_BUILD)/$(NAME).map
@@ -29,9 +33,10 @@ LDLIBS  := -L$(MRUBY_BUILD)/nds/lib -L$(LIBNDS)/lib \
 	-lfilesystem -lfat -lnds9 -lcalico_ds9 -lm
 
 BINDINGS := src/main.c src/bindings_net.c src/bindings_input.c \
-	src/bindings_gfx.c src/bindings_fs.c src/bindings_audio.c \
+	src/bindings_gfx.c src/bindings_video.c src/bindings_fs.c src/bindings_audio.c \
 	src/bindings_system.c
 OBJECTS := $(BINDINGS:src/%.c=$(BUILD)/%.o)
+OBJECTS += $(BUILD)/fastlz.o
 
 NITROFS_FILES := $(shell find assets -type f -o -type d)
 
@@ -41,7 +46,7 @@ NITROFS_FILES := $(shell find assets -type f -o -type d)
 
 all: $(NAME).nds
 
-$(BUILD)/.mruby-built: build_config.rb
+$(BUILD)/.mruby-built: build_config.rb $(MRUBY_GEMS)
 	@test -f vendor/mruby/Rakefile || (echo "vendor/mruby is missing. Restore it from the project archive or clone mruby 4.0.0 into vendor/mruby." && exit 1)
 	mkdir -p $(BUILD)
 	cd vendor/mruby && MRUBY_CONFIG=$(abspath build_config.rb) \
@@ -50,22 +55,32 @@ $(BUILD)/.mruby-built: build_config.rb
 
 $(MRBC) $(MRUBY_LIB): $(BUILD)/.mruby-built
 
-$(ASSET_STAMP): tools/assets.rb $(NITROFS_FILES)
+$(ASSET_STAMP): tools/assets.rb $(NITROFS_FILES) $(VIDEO_ENCODER)
 	mkdir -p $(BUILD)
-	$(RUBY) tools/assets.rb assets $(ASSET_BUILD)
+	$(RUBY) tools/assets.rb assets $(ASSET_BUILD) $(VIDEO_ENCODER)
 	touch $@
+
+$(VIDEO_ENCODER): tools/r15v.c third_party/fastlz/fastlz.c third_party/fastlz/fastlz.h
+	mkdir -p $(BUILD)
+	$(HOSTCC) -O2 -Ithird_party/fastlz tools/r15v.c third_party/fastlz/fastlz.c -o $@
 
 $(APP_BUILD)/app_bytecode.c: $(GAME) $(MRBC)
 	mkdir -p $(APP_BUILD)
 	$(MRBC) -Bapp_bytecode -o $@ $<
 
-$(BUILD)/%.o: src/%.c src/bindings.h $(MRUBY_LIB)
+$(BUILD)/%.o: src/%.c src/bindings.h | $(BUILD)/.mruby-built
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/bindings_video.o: third_party/fastlz/fastlz.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -marm -c src/bindings_video.c -o $@
+
+$(BUILD)/fastlz.o: third_party/fastlz/fastlz.c third_party/fastlz/fastlz.h | $(BUILD)/.mruby-built
+	$(CC) $(CPPFLAGS) $(CFLAGS) -marm -c $< -o $@
 
 $(APP_BUILD)/app_bytecode.o: $(APP_BUILD)/app_bytecode.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(APP_BUILD)/$(NAME).elf: $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(MRUBY_LIB)
+$(APP_BUILD)/$(NAME).elf: $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(MRUBY_LIB) $(BUILD)/.mruby-built
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(LDLIBS)
 
 $(NAME).nds: $(APP_BUILD)/$(NAME).elf $(ASSET_STAMP)

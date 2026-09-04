@@ -1,13 +1,13 @@
 module Timer
-  @frames = 0
+  @start = nil
 
   def self.ms
-    milliseconds = @frames * 1000 / 60
-    @frames += 1
-    milliseconds
+    now = System.milliseconds
+    @start = now unless @start
+    now - @start
   end
 
   def self.reset
-    @frames = 0
+    @start = System.milliseconds
   end
 end
