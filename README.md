@@ -151,6 +151,7 @@ RubyNDS is built on the work of many open-source projects:
 - K. Takata and K. Kosako for Onigmo and Oniguruma, used by `mruby-onig-regexp`.
 - Krzysztof Gabis for Parson, used by `mruby-json`.
 - Ariya Hidayat for [FastLZ](https://github.com/ariya/FastLZ), used by R15V video.
+- Thomas Pornin for [BearSSL](https://bearssl.org/), used for on-device TLS and HTTPS.
 
 All third-party components remain the property of their respective authors and are distributed under their respective licenses.
 

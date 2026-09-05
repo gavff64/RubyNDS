@@ -35,6 +35,7 @@ MRuby::CrossBuild.new("nds") do |conf|
   conf.gem "gems/mruby-ansi-colors"
   conf.gem "gems/mruby-puts"
   conf.gem "gems/rubynds-http"
+  conf.gem "gems/rubynds-https"
   conf.gem "gems/rubynds-audio"
   conf.gem "gems/rubynds-input"
   conf.gem "gems/rubynds-draw"

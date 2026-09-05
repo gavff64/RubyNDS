@@ -23,6 +23,7 @@ int main(void)
   }
   else {
     register_net_bindings(mrb);
+    register_tls_bindings(mrb);
     register_input_bindings(mrb);
     register_gfx_bindings(mrb);
     register_video_bindings(mrb);
@@ -37,6 +38,7 @@ int main(void)
     }
 
     video_shutdown();
+    tls_shutdown();
     audio_shutdown();
     fs_shutdown();
     mrb_close(mrb);

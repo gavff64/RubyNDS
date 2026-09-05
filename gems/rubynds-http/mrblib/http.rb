@@ -81,6 +81,7 @@ module HTTP
   end
 
   def self.get(url, port: 80, stream: false)
+    raise "use HTTPS.get for HTTPS URLs" if url.downcase.start_with?("https://")
     ensure_wifi!
     match = url.match(/\A(?:https?:\/\/)?([^\/?#:]+)(?::(\d+))?/)
     host = match[1]

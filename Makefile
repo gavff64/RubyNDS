@@ -14,6 +14,9 @@ MRUBY_GEMS  := $(shell find gems -type f)
 ASSET_BUILD := $(BUILD)/assets
 ASSET_STAMP := $(BUILD)/.assets-built
 VIDEO_ENCODER := $(BUILD)/r15v
+BEARSSL := vendor/bearssl
+BEARSSL_REV := 7bea48e5e850ab4cafbe68d3765cdaba13a86d6f
+TLS_CA_BUNDLE ?= third_party/certs/cacert.pem
 
 CC      := $(DEVKITARM)/bin/arm-none-eabi-gcc
 NDSTOOL := $(DEVKITPRO)/tools/bin/ndstool
@@ -24,15 +27,15 @@ ARCH := -march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
 CPPFLAGS := -D__NDS__ -DARM9 -DMRB_INT32 -DMRB_USE_FLOAT32 \
 	-I$(LIBNDS)/include -I$(DEVKITPRO)/calico/include \
 	-Ivendor/mruby/include -I$(MRUBY_BUILD)/nds/include \
-	-Ithird_party/fastlz
+	-Ithird_party/fastlz -I$(BEARSSL)/inc -I$(BUILD)
 CFLAGS  := -O2 -Wall -ffunction-sections -fdata-sections -MMD -MP $(ARCH)
 LDFLAGS := -specs=$(DEVKITPRO)/calico/share/ds9.specs $(ARCH) \
 	-Wl,--gc-sections -Wl,-Map,$(APP_BUILD)/$(NAME).map
 LDLIBS  := -L$(MRUBY_BUILD)/nds/lib -L$(LIBNDS)/lib \
 	-L$(DEVKITPRO)/calico/lib -lmruby -lmm9 -ldswifi9 \
-	-lfilesystem -lfat -lnds9 -lcalico_ds9 -lm
+	-L$(BUILD)/bearssl-nds -lbearssl -lfilesystem -lfat -lnds9 -lcalico_ds9 -lm
 
-BINDINGS := src/main.c src/bindings_net.c src/bindings_input.c \
+BINDINGS := src/main.c src/bindings_net.c src/bindings_tls.c src/bindings_input.c \
 	src/bindings_gfx.c src/bindings_video.c src/bindings_fs.c src/bindings_audio.c \
 	src/bindings_system.c
 OBJECTS := $(BINDINGS:src/%.c=$(BUILD)/%.o)
@@ -54,6 +57,24 @@ $(BUILD)/.mruby-built: build_config.rb $(MRUBY_GEMS)
 	touch $@
 
 $(MRBC) $(MRUBY_LIB): $(BUILD)/.mruby-built
+
+$(BEARSSL)/.rubynds-$(BEARSSL_REV):
+	@test -d $(BEARSSL)/.git || git clone https://www.bearssl.org/git/BearSSL $(BEARSSL)
+	git -C $(BEARSSL) checkout --detach $(BEARSSL_REV)
+	touch $@
+
+$(BUILD)/bearssl-nds/libbearssl.a: $(BEARSSL)/.rubynds-$(BEARSSL_REV)
+	$(MAKE) -C $(BEARSSL) BUILD=$(abspath $(BUILD)/bearssl-nds) lib \
+		CC=$(CC) AR=$(DEVKITARM)/bin/arm-none-eabi-ar \
+		CFLAGS="$(CFLAGS) -marm -DBR_USE_UNIX_TIME=1 -DBR_CT_MUL31=1 -DBR_CT_MUL15=1"
+
+$(BUILD)/bearssl-host/brssl: $(BEARSSL)/.rubynds-$(BEARSSL_REV)
+	$(MAKE) -C $(BEARSSL) BUILD=$(abspath $(BUILD)/bearssl-host) tools CC=$(HOSTCC) LD=$(HOSTCC)
+
+$(BUILD)/tls_roots.h: $(TLS_CA_BUNDLE) $(BUILD)/bearssl-host/brssl
+	$(BUILD)/bearssl-host/brssl ta $(TLS_CA_BUNDLE) > $@
+
+$(BUILD)/bindings_tls.o: $(BUILD)/tls_roots.h
 
 $(ASSET_STAMP): tools/assets.rb $(NITROFS_FILES) $(VIDEO_ENCODER)
 	mkdir -p $(BUILD)
@@ -80,7 +101,7 @@ $(BUILD)/fastlz.o: third_party/fastlz/fastlz.c third_party/fastlz/fastlz.h | $(B
 $(APP_BUILD)/app_bytecode.o: $(APP_BUILD)/app_bytecode.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(APP_BUILD)/$(NAME).elf: $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(MRUBY_LIB) $(BUILD)/.mruby-built
+$(APP_BUILD)/$(NAME).elf: $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(MRUBY_LIB) $(BUILD)/.mruby-built $(BUILD)/bearssl-nds/libbearssl.a
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) $(APP_BUILD)/app_bytecode.o $(LDLIBS)
 
 $(NAME).nds: $(APP_BUILD)/$(NAME).elf $(ASSET_STAMP)

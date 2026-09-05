@@ -1,4 +1,5 @@
 *.nds
+*.mrb
 /build/
 /vendor/
 /custom_gem_tests/
@@ -9,5 +10,9 @@ build_config.rb.lock
 .DS_Store
 *~
 *.swp
+*.seed
+tls.seed*
+dldi.bin*
+*.img
 /assets/**
 !/assets/README.md
