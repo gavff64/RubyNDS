@@ -406,6 +406,31 @@ Draw single pixel:
 Draw.pixel(1, 1, BLUE, :top)
 ```
 
+There's built in bitmap data for a basic font that supports 95 different characters ([thanks!](https://github.com/dhepper/font8x8)). Each character is 8 by 8 pixels, which cannot
+be changed without changing the entire font. Only the color can be changed easily:
+
+```ruby
+Debug.enabled = false
+
+Draw.text("Top screen", 88, 92, WHITE, :top)
+Draw.text("Bottom screen", 76, 92, WHITE, :bottom)
+
+while System.main_loop?
+  System.vblank
+end
+```
+
+Inside the mrbgem you can see:
+
+```ruby
+DEFAULT_FONT = Font.new(8, 8, 32, FONT_DATA)
+```
+
+Which describes the characters being 8 by 8 pixels, the first stored character has ASCII code 32, and FONT_DATA being a long string of
+bytes, each byte representing 1 horizontal row of 8 pixels.
+
+This is good enough for now but I should probably add to the tools section a converter to turn fonts into this format.
+
 ### `Audio`
 
 Sound effects and short audio clips should be played without streaming. Long audio files should be streamed. Only streamed audio loops
