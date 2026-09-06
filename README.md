@@ -11,7 +11,7 @@ Write DSi Homebrew apps in pure Ruby!
 RubyNDS is an SDK which includes an embedded mruby runtime, thin bindings to native DS libraries, build tooling and examples. There is both a **low-level Ruby API** for finer-grained control without C, and an idiomatic **high-level Ruby API** for developer happiness. The focus is DSi development, but inherently *most* RubyNDS applications will run on DS/2DS/3DS as well.
 
 <div align="center">
-  
+
 | DS hardware -> Native DS Libraries -> Thin C bindings -> Low-level Ruby API -> High-level Ruby API |
 | --- |
 
@@ -19,7 +19,7 @@ RubyNDS is an SDK which includes an embedded mruby runtime, thin bindings to nat
 
 ### Example:
 
-These 3 scripts all do the same thing. 
+These 3 scripts all do the same thing.
 - Connect to wifi
 - Fetch some data
 - Display the result through the libnds on-screen console (unparsed)
@@ -104,41 +104,9 @@ Thank you for reading.
 <img width="200" height="150" alt="love" src="https://github.com/user-attachments/assets/ae9978c5-d18c-4472-98cc-5401e69c7e5e" />
 </div>
 
-<div align="center">
+## Documentation and Setup
 
-## Setup
-
-| Requires: [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `nds-dev` package group |
-| --- |
-
-</div>
-
-1. Clone [mruby 4.0.0](https://github.com/mruby/mruby) into the ignored `vendor` directory:
-
-```sh
-mkdir -p vendor
-git clone --depth 1 --branch 4.0.0 \
-  https://github.com/mruby/mruby.git vendor/mruby
-```
-
-2. Then build an application:
-
-```sh
-make GAME=path/to/something/example.rb
-```
-
-3. The resulting ROM will be written to:
-
-```text
-example.nds
-```
-
-4. Be sure to run a clean build after every modification:
-
-```sh
-make clean
-make GAME=path/to/something/example.rb
-```
+See [DOCS.md](./DOCS.md) or [docs.gavff.dev/RubyNDS](https://docs.gavff.dev/RubyNDS).
 
 ## Formal Acknowledgements
 

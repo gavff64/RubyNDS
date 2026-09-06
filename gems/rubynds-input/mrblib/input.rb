@@ -16,4 +16,12 @@ module Input
   def self.down?(key)
     (down & key) != 0
   end
+
+  def self.held?(key)
+    (held & key) != 0
+  end
+
+  def self.up?(key)
+    (up & key) != 0
+  end
 end
