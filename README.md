@@ -3,6 +3,8 @@
 # RubyNDS
 Write DSi Homebrew apps in pure Ruby!
 
+Documentation and setup at [DOCS.md](./DOCS.md)
+
 <img width="235" height="360" alt="video" src="https://github.com/user-attachments/assets/0fa1c674-4b7e-43a6-96b7-38bbc3ca556a" />
 
 </div>
@@ -104,9 +106,6 @@ Thank you for reading.
 <img width="200" height="150" alt="love" src="https://github.com/user-attachments/assets/ae9978c5-d18c-4472-98cc-5401e69c7e5e" />
 </div>
 
-## Documentation and Setup
-
-See [DOCS.md](./DOCS.md) or [docs.gavff.dev/RubyNDS](https://docs.gavff.dev/RubyNDS).
 
 ## Formal Acknowledgements
 
