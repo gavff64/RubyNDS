@@ -9,6 +9,9 @@
 #include "bindings.h"
 
 #define AUDIO_MAX_RATE 32768
+#define AUDIO_DEFAULT_BUFFER 4096
+#define AUDIO_MIN_BUFFER 64
+#define AUDIO_MAX_BUFFER 65536
 #define AUDIO_MAX_SAMPLES 16
 #define AUDIO_SAMPLE_8BIT 0
 #define AUDIO_SAMPLE_16BIT 1
@@ -109,18 +112,23 @@ static mrb_value audio_open(mrb_state *mrb, mrb_value self)
   if (s_audio.open)
     mrb_raise(mrb, E_RUNTIME_ERROR, "Audio.open: already open; close first");
 
-  mrb_int kw_num = 3;
+  mrb_int kw_num = 4;
   mrb_int kw_required = 3;
   mrb_sym kw_names[] = { mrb_intern_lit(mrb, "sample_rate"),
                          mrb_intern_lit(mrb, "bits"),
-                         mrb_intern_lit(mrb, "channels") };
-  mrb_value kw_values[3];
+                         mrb_intern_lit(mrb, "channels"),
+                         mrb_intern_lit(mrb, "buffer_length") };
+  mrb_value kw_values[4];
   mrb_kwargs kwargs = { kw_num, kw_required, kw_names, kw_values, NULL };
   mrb_get_args(mrb, ":", &kwargs);
+
+  if (mrb_undef_p(kw_values[3]))
+    kw_values[3] = mrb_fixnum_value(AUDIO_DEFAULT_BUFFER);
 
   mrb_int rate = mrb_as_int(mrb, kw_values[0]);
   mrb_int bits = mrb_as_int(mrb, kw_values[1]);
   mrb_int channels = mrb_as_int(mrb, kw_values[2]);
+  mrb_int buffer_length = mrb_as_int(mrb, kw_values[3]);
 
   if (rate < 1024 || rate > AUDIO_MAX_RATE)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: sample_rate must be 1024..32768");
@@ -128,6 +136,8 @@ static mrb_value audio_open(mrb_state *mrb, mrb_value self)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: bits must be 8 or 16");
   if (channels != 1 && channels != 2)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: channels must be 1 or 2");
+  if (buffer_length < AUDIO_MIN_BUFFER || buffer_length > AUDIO_MAX_BUFFER)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: buffer_length must be 64..65536");
 
   audio_init();
 
@@ -143,7 +153,7 @@ static mrb_value audio_open(mrb_state *mrb, mrb_value self)
   mm_stream stream;
   memset(&stream, 0, sizeof stream);
   stream.sampling_rate = (mm_word)rate;
-  stream.buffer_length = 4096;
+  stream.buffer_length = (mm_word)buffer_length;
   stream.callback = audio_fill;
   if (bits == 8)
     stream.format = channels == 2 ? MM_STREAM_8BIT_STEREO : MM_STREAM_8BIT_MONO;

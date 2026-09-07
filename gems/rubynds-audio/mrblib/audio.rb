@@ -27,7 +27,7 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
     audio
   end
 
-  def self.play(audio)
+  def self.play(audio, buffer_length: 4096)
     return Audio.effect_play(audio) if audio.is_a?(Integer)
 
     unless @playing && @stream == audio
@@ -36,7 +36,8 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
       sample_rate = audio.is_a?(PCMFile) ? audio.sample_rate : 32000
       bits = audio.is_a?(PCMFile) ? audio.bits : 16
       channels = audio.is_a?(PCMFile) ? audio.channels : 2
-      Audio.open(sample_rate: sample_rate, bits: bits, channels: channels)
+      Audio.open(sample_rate: sample_rate, bits: bits, channels: channels,
+                 buffer_length: buffer_length)
       @stream = audio
       @frame_bytes = bits / 8 * channels
       @bytes_per_second = sample_rate * @frame_bytes
@@ -74,7 +75,7 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
         @offset += used
       end
     else
-      Audio.update("")
+      Audio.update("") if @position.nil?
     end
 
     stop if @eof && @offset == @pending.bytesize
