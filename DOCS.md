@@ -583,7 +583,7 @@ end
 The goal with this was to have 3 good formats for local playback, and 3 good formats for internet playback. I needed a balance between format popularity, file size, and computational efficiency.
 R15I, R15V and PCM are intended for local use. JPEG, MJPEG, and MP3 are intended for remote (internet) use. They can be used interchangeably though.
 
-### R15I and R15V
+### 'R15I and R15V'
 
 R15I (RGB15 Image) and R15V (RGB15 Video) are both my attempt at designing formats to display images and high(-ish) frame rate color video, without a
 massive `.nds` file or heavy on-device decoding, or massive bindings. These file formats (alongside PCM) are meant for local media.
@@ -602,18 +602,18 @@ These frames are compressed with [FastLZ](./third_party/fastlz), which the DS ca
 data on their own. But of course audio syncing works as shown previously. Video runs at 24 FPS max, which feels smooth. I guess this means the DS
 is technically decoding video, but not in the practical sense? It's mostly just decompressing.
 
-### PCM
+### 'PCM'
 
 PCM is simply pre-decoded audio that the DS hardware handles directly. PCM8 and PCM16 is used, however ADPCM is unforetunately not supported due to self-incompetence lol
 (from what I read, it seems difficult to work with. But the payoff could be huge, so likely worth looking more into.)
 
-### JPEG/MJPEG
+### 'JPEG/MJPEG'
 
 Fortunately, [this godsend, TJpgDec](https://elm-chan.org/fsw/tjpgd/00index.html) exists which gives super tiny and lightweight JPEG support, and a sweet side effect of that is
 MJPEG support. TJpgDec simply decompresses small sections of the frame and writes the RGB15 pixels onto the DS screen. I'm not sure how fast MJPEG playback is on this, but I was able
 to successfully play a 10 fps low quality livestream.
 
-### MP3
+### 'MP3'
 
 Using the [OpenCORE MP3 decoder](https://android.googlesource.com/platform/frameworks/av/+/ee17317c6362f54bd311ec359b5c3518137fae9f/media/libstagefright/codecs/mp3dec/) we can convert
 buffered MP3 data into PCM16 audio. Both HTTP and HTTPS in RubyNDS read the server's Content-Type to see if the stream contains MP3 data, then creates an MP3 stream automatically.
