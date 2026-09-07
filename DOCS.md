@@ -601,7 +601,7 @@ is technically decoding video, but not in the practical sense? It's mostly just 
 
 A lot, but also not that much. Can't be bothered to type that out right now. Outside of incomplete mrbgems and bindings (since those aren't
 limitations, I just haven't finished them), the inherent limitations would be less performance than writing in pure C, obviously. But also the
-lack of a possible on-device audio and video decoder.
+lack of a possible on-device audio and video decoder. (Edit: currently experimenting with MJPEG)
 
 From my research, there are some projects that can decode video and audio on-device, but they seem to use specific file formats and are extremely
 computationally expensive. Interacting with everyday audio and video on the internet may not be possible without a relay server.
