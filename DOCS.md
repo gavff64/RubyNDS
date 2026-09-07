@@ -24,32 +24,39 @@ P.S. I am not an author, so sorry if this sucks balls lol 👎. There's a ton to
 
 ## Getting started
 
-| Requires: [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `nds-dev` package group |
+| Requires: Ruby and Rake |
 | --- |
 
 </div>
 
-1. Clone [mruby 4.0.0](https://github.com/mruby/mruby) into the `vendor` directory:
+1. Clone RubyNDS:
 
 ```sh
-mkdir -p vendor
-git clone --depth 1 --branch 4.0.0 \
-  https://github.com/mruby/mruby.git vendor/mruby
+git clone https://github.com/gavff64/RubyNDS.git
+cd RubyNDS
 ```
 
-2. Then build an application:
+2. Run the setup:
+
+```sh
+rake setup
+```
+
+This checks for [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `nds-dev` package group, the required build tools and [FFmpeg](https://ffmpeg.org/). It also clones [mruby 4.0.0](https://github.com/mruby/mruby) into the `vendor` directory. If anything is missing, install it and run `rake setup` again.
+
+3. Then build an application:
 
 ```sh
 make GAME=examples/example.rb
 ```
 
-3. The resulting ROM will be written to:
+4. The resulting ROM will be written to:
 
 ```text
 example.nds
 ```
 
-4. Be sure to run a clean build after every modification:
+After modifying your application, run the same `make` command again. You only need to run a clean build if you want to rebuild everything:
 
 ```sh
 make clean
@@ -524,7 +531,7 @@ stream = HTTP.get("192.168.1.10/music.pcm", port: 8123, stream: true)
 
 ### `HTTPS`
 
-Same as HTTP, but obviously HTTPS. However, it's currently extremely limited: blocking GET requests only. No streaming, etc. etc.
+Same functionality as HTTP:
 
 ```ruby
 HTTPS.get("https://example.com", port: 443)

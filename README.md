@@ -113,12 +113,9 @@ RubyNDS is built on the work of many open-source projects:
 
 - [mruby](https://github.com/mruby/mruby) and its contributors for the embedded Ruby runtime.
 - [devkitPro](https://github.com/devkitPro) and its contributors for the toolchain and DS development ecosystem, including [libnds](https://github.com/devkitPro/libnds), [DSWifi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod), [Calico](https://github.com/devkitPro/calico), and [libfat](https://github.com/devkitPro/libfat).
-- Yasuhiro Matsumoto (`mattn`) for [mruby-json](https://github.com/mattn/mruby-json), [mruby-onig-regexp](https://github.com/mattn/mruby-onig-regexp) and more.
-- Ralph Desir (`Mav7`) for `mruby-ansi-colors`.
-- K. Takata and K. Kosako for Onigmo and Oniguruma, used by `mruby-onig-regexp`.
-- Krzysztof Gabis for Parson, used by `mruby-json`.
 - Ariya Hidayat for [FastLZ](https://github.com/ariya/FastLZ), used by R15V video.
 - Thomas Pornin for [BearSSL](https://bearssl.org/), used for on-device TLS and HTTPS.
+- ChaN for [TJpgDec](https://elm-chan.org/fsw/tjpgd/00index.html), used for JPEG and MJPEG decoding.
 
 All third-party components remain the property of their respective authors and are distributed under their respective licenses.
 
