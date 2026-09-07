@@ -1,5 +1,51 @@
 module HTTPS
-  def self.get(url, port: 443, seed: "fat:/tls.seed")
+  class Stream
+    def initialize(sock, pending, length)
+      @sock = sock
+      @pending = pending
+      @length = length
+      @read = 0
+      @closed = false
+    end
+
+    def read(maxlen = 4096)
+      return "" if @closed
+
+      if @length
+        remaining = @length - @read
+        return close if remaining <= 0
+        maxlen = remaining if remaining < maxlen
+      end
+
+      unless @pending.empty?
+        chunk = @pending.byteslice(0, maxlen)
+        @pending = @pending.byteslice(chunk.bytesize, @pending.bytesize - chunk.bytesize) || ""
+        @read += chunk.bytesize
+        close if @length && @read >= @length
+        return chunk
+      end
+
+      chunk = TLS.recv(maxlen)
+      return close if chunk == ""
+      @read += chunk.bytesize
+      close if @length && @read >= @length
+      chunk
+    end
+
+    def eof?
+      @closed
+    end
+
+    def close
+      return "" if @closed
+      TLS.close
+      Net.close(@sock)
+      @closed = true
+      ""
+    end
+  end
+
+  def self.open_stream(url, port, seed)
     raise "invalid HTTPS URL" if url.match(/[\x00-\x20\x7f]/)
     match = url.match(/\A(?:https:\/\/)?([^\/?#:@]+)(?::(\d+))?([\/?#].*)?\z/)
     raise "invalid HTTPS URL" unless match
@@ -15,11 +61,11 @@ module HTTPS
     sock = Net.connect(host, port)
 
     begin
-      opened = TLS.open(sock, host)
+      TLS.open(sock, host)
       request_lines = [
         "GET #{path} HTTP/1.0",
         "Host: #{host_header}",
-        "User-Agent: RubyNDS",
+        "User-Agent: curl/8.0",
         "Accept-Encoding: identity",
         "Connection: close"
       ]
@@ -32,33 +78,41 @@ module HTTPS
 
       response = ""
       header_end = nil
-      length = nil
 
-      loop do
-        chunk = TLS.recv(4096)
-        break if chunk == ""
+      until header_end
+        chunk = TLS.recv(512)
+        raise "HTTPS response ended before the headers were complete" if chunk == ""
         response << chunk
-
-        unless header_end
-          header_end = response.index("\r\n\r\n")
-          if header_end
-            headers = response.byteslice(0, header_end)
-            raise "unsupported transfer encoding" if headers.match(/\r\nTransfer-Encoding:/i)
-            size = headers.match(/\r\nContent-Length:\s*(\d+)\s*(?:\r\n|\z)/i)
-            length = size[1].to_i if size
-          end
-        end
-
-        break if header_end && length && response.bytesize >= header_end + 4 + length
+        header_end = response.index("\r\n\r\n")
       end
 
-      raise "HTTPS response ended before the headers were complete" unless header_end
-      body = response.byteslice(header_end + 4, response.bytesize - header_end - 4)
-      raise "incomplete HTTPS response" if length && body.bytesize < length
-      length ? body.byteslice(0, length) : body
-    ensure
-      TLS.close if opened
+      headers = response.byteslice(0, header_end)
+      raise "unsupported transfer encoding" if headers.match(/\r\nTransfer-Encoding:/i)
+      size = headers.match(/\r\nContent-Length:\s*(\d+)\s*(?:\r\n|\z)/i)
+      length = size ? size[1].to_i : nil
+      pending = response.byteslice(header_end + 4, response.bytesize - header_end - 4) || ""
+      Stream.new(sock, pending, length)
+    rescue
+      TLS.close
       Net.close(sock)
+      raise
     end
+  end
+
+  def self.get(url, port: 443, seed: "fat:/tls.seed", stream: false)
+    source = open_stream(url, port, seed)
+    return source if stream
+
+    body = ""
+    begin
+      loop do
+        chunk = source.read
+        break if chunk == ""
+        body << chunk
+      end
+    ensure
+      source.close
+    end
+    body
   end
 end

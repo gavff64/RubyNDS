@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "bindings.h"
+#include "tjpgd.h"
 
 #define GFX_SCREEN_W 256
 #define GFX_SCREEN_H 192
@@ -14,6 +15,47 @@ static u16 *s_fb = NULL;
 static u16 *s_bottom_fb = NULL;
 static bool s_video = false;
 static bool s_bottom_terminal = true;
+static u32 s_jpeg_work[1024];
+
+typedef struct {
+  const u8 *data;
+  size_t length;
+  size_t offset;
+  u16 *framebuffer;
+  int x;
+  int y;
+} jpeg_state_t;
+
+static size_t jpeg_input(JDEC *decoder, u8 *buffer, size_t length)
+{
+  jpeg_state_t *state = decoder->device;
+  size_t available = state->length - state->offset;
+  if (length > available)
+    length = available;
+  if (buffer)
+    memcpy(buffer, state->data + state->offset, length);
+  state->offset += length;
+  return length;
+}
+
+static int jpeg_output(JDEC *decoder, void *bitmap, JRECT *rect)
+{
+  jpeg_state_t *state = decoder->device;
+  u16 *source = bitmap;
+  int width = rect->right - rect->left + 1;
+
+  for (int row = rect->top; row <= rect->bottom; row++) {
+    u16 *dest = state->framebuffer + (state->y + row) * GFX_PITCH_PX +
+      state->x + rect->left;
+    for (int column = 0; column < width; column++) {
+      u16 pixel = *source++;
+      dest[column] = (1 << 15) | (pixel >> 11) |
+        ((pixel >> 6 & 31) << 5) | ((pixel & 31) << 10);
+    }
+  }
+
+  return 1;
+}
 
 void gfx_init(void)
 {
@@ -134,6 +176,44 @@ static mrb_value gfx_fill_rect(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
+static mrb_value gfx_jpeg(mrb_state *mrb, mrb_value self)
+{
+  mrb_value screen_v, data;
+  mrb_int x, y, scale = 0;
+  mrb_get_args(mrb, "oiiS|i", &screen_v, &x, &y, &data, &scale);
+
+  if (scale < 0 || scale > 3)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Gfx.jpeg: scale must be 0..3");
+
+  u16 *framebuffer = screen_framebuffer(mrb, screen_v);
+  if (!framebuffer)
+    return mrb_nil_value();
+
+  jpeg_state_t state;
+  state.data = (const u8 *)RSTRING_PTR(data);
+  state.length = RSTRING_LEN(data);
+  state.offset = 0;
+  state.framebuffer = framebuffer;
+  state.x = x;
+  state.y = y;
+
+  JDEC decoder;
+  JRESULT result = jd_prepare(&decoder, jpeg_input, s_jpeg_work, sizeof s_jpeg_work, &state);
+  if (result != JDR_OK)
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Gfx.jpeg: invalid JPEG");
+
+  int unit = 1 << scale;
+  int width = (decoder.width + unit - 1) >> scale;
+  int height = (decoder.height + unit - 1) >> scale;
+  if (x < 0 || y < 0 || x + width > GFX_SCREEN_W || y + height > GFX_SCREEN_H)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Gfx.jpeg: image must fit within 256x192");
+
+  result = jd_decomp(&decoder, jpeg_output, scale);
+  if (result != JDR_OK)
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Gfx.jpeg: decode failed");
+  return mrb_nil_value();
+}
+
 static mrb_value gfx_bottom_mode(mrb_state *mrb, mrb_value self)
 {
   mrb_sym mode;
@@ -164,5 +244,6 @@ void register_gfx_bindings(mrb_state *mrb)
   struct RClass *gfx = mrb_define_module(mrb, "Gfx");
   mrb_define_module_function(mrb, gfx, "blit",      gfx_blit,      MRB_ARGS_REQ(6));
   mrb_define_module_function(mrb, gfx, "fill_rect", gfx_fill_rect, MRB_ARGS_REQ(6));
+  mrb_define_module_function(mrb, gfx, "jpeg",      gfx_jpeg,      MRB_ARGS_ARG(4, 1));
   mrb_define_module_function(mrb, gfx, "bottom_mode", gfx_bottom_mode, MRB_ARGS_REQ(1));
 }

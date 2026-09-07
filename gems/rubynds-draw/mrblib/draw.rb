@@ -85,6 +85,57 @@ module Draw
 
   DEFAULT_FONT = Font.new(8, 8, 32, FONT_DATA)
 
+  class JPEG
+    attr_reader :data
+
+    def initialize(data)
+      @data = data
+    end
+  end
+
+  class MJPEG
+    def initialize(stream)
+      @stream = stream
+      @data = ""
+      @closed = false
+    end
+
+    def read
+      return nil if @closed
+
+      loop do
+        first = @data.index("\xFF\xD8")
+        last = @data.index("\xFF\xD9", first + 2) if first
+
+        if last
+          frame = @data.byteslice(first, last - first + 2)
+          @data = @data.byteslice(last + 2, @data.bytesize - last - 2) || ""
+          return frame
+        end
+
+        @data = @data.byteslice(first, @data.bytesize - first) if first && first > 0
+        @data = @data.byteslice(-1, 1) if !first && @data.bytesize > 4096
+
+        chunk = @stream.read(1024)
+        if chunk == ""
+          close
+          return nil
+        end
+        @data << chunk
+      end
+    end
+
+    def close
+      return if @closed
+      @stream.close
+      @closed = true
+    end
+
+    def closed?
+      @closed
+    end
+  end
+
   class Image
     attr_reader :width, :height, :pixels
 
@@ -139,17 +190,39 @@ module Draw
     end
   end
 
-  def self.load(path)
-    return Video.new(path) if VIDEO_FORMATS.any? { |format| path.downcase.end_with?(format) }
-    Image.new(path)
+  def self.load(source)
+    return MJPEG.new(source) unless source.is_a?(String)
+    return JPEG.new(source) if source.getbyte(0) == 255 && source.getbyte(1) == 216
+    return Video.new(source) if VIDEO_FORMATS.any? { |format| source.downcase.end_with?(format) }
+    Image.new(source)
   end
 
-  def self.image(image, x, y, screen = :top)
-    Gfx.blit(screen, x, y, image.width, image.height, image.pixels)
+  def self.image(image, x, y, screen = :top, scale = 0)
+    if image.is_a?(JPEG)
+      Gfx.jpeg(screen, x, y, image.data, scale)
+    else
+      Gfx.blit(screen, x, y, image.width, image.height, image.pixels)
+    end
   end
 
-  def self.video(video, x = nil, y = nil)
+  def self.video(video, x = nil, y = nil, screen = :top, scale = 0)
     return false if video.closed?
+
+    if video.is_a?(MJPEG)
+      unless @video == video
+        stop
+        @video = video
+      end
+
+      frame = video.read
+      unless frame
+        stop
+        return false
+      end
+
+      Gfx.jpeg(screen, x || 0, y || 0, frame, scale)
+      return true
+    end
 
     unless @video == video
       stop

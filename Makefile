@@ -16,6 +16,8 @@ ASSET_STAMP := $(BUILD)/.assets-built
 VIDEO_ENCODER := $(BUILD)/r15v
 BEARSSL := vendor/bearssl
 BEARSSL_REV := 7bea48e5e850ab4cafbe68d3765cdaba13a86d6f
+TJPGD := $(BUILD)/tjpgd
+TJPGD_SHA256 := 052fe3efbc9a8be29f31597ad009c5b51a4f6905878eb28569e0ab3d46d0c013
 TLS_CA_BUNDLE ?= third_party/certs/cacert.pem
 
 CC      := $(DEVKITARM)/bin/arm-none-eabi-gcc
@@ -27,7 +29,7 @@ ARCH := -march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
 CPPFLAGS := -D__NDS__ -DARM9 -DMRB_INT32 -DMRB_USE_FLOAT32 \
 	-I$(LIBNDS)/include -I$(DEVKITPRO)/calico/include \
 	-Ivendor/mruby/include -I$(MRUBY_BUILD)/nds/include \
-	-Ithird_party/fastlz -I$(BEARSSL)/inc -I$(BUILD)
+	-Ithird_party/fastlz -I$(BEARSSL)/inc -I$(TJPGD)/src -I$(BUILD)
 CFLAGS  := -O2 -Wall -ffunction-sections -fdata-sections -MMD -MP $(ARCH)
 LDFLAGS := -specs=$(DEVKITPRO)/calico/share/ds9.specs $(ARCH) \
 	-Wl,--gc-sections -Wl,-Map,$(APP_BUILD)/$(NAME).map
@@ -39,7 +41,7 @@ BINDINGS := src/main.c src/bindings_net.c src/bindings_tls.c src/bindings_input.
 	src/bindings_gfx.c src/bindings_video.c src/bindings_fs.c src/bindings_audio.c \
 	src/bindings_system.c
 OBJECTS := $(BINDINGS:src/%.c=$(BUILD)/%.o)
-OBJECTS += $(BUILD)/fastlz.o
+OBJECTS += $(BUILD)/fastlz.o $(BUILD)/tjpgd.o
 
 NITROFS_FILES := $(shell find assets -type f -o -type d)
 
@@ -76,6 +78,15 @@ $(BUILD)/tls_roots.h: $(TLS_CA_BUNDLE) $(BUILD)/bearssl-host/brssl
 
 $(BUILD)/bindings_tls.o: $(BUILD)/tls_roots.h
 
+$(TJPGD)/.rubynds-$(TJPGD_SHA256):
+	mkdir -p $(TJPGD)
+	curl -L --fail --silent --show-error --retry 3 --retry-all-errors --http1.1 --tlsv1.2 https://elm-chan.org/fsw/tjpgd/arc/tjpgd3.zip -o $(TJPGD)/tjpgd.zip
+	echo "$(TJPGD_SHA256)  $(TJPGD)/tjpgd.zip" | sha256sum -c -
+	unzip -oq $(TJPGD)/tjpgd.zip -d $(TJPGD)
+	sed -i 's/#define[[:space:]]*JD_FORMAT[[:space:]]*0/#define JD_FORMAT 1/' $(TJPGD)/src/tjpgdcnf.h
+	sed -i 's/#define[[:space:]]*JD_FASTDECODE[[:space:]]*0/#define JD_FASTDECODE 1/' $(TJPGD)/src/tjpgdcnf.h
+	touch $@
+
 $(ASSET_STAMP): tools/assets.rb $(NITROFS_FILES) $(VIDEO_ENCODER)
 	mkdir -p $(BUILD)
 	$(RUBY) tools/assets.rb assets $(ASSET_BUILD) $(VIDEO_ENCODER)
@@ -95,8 +106,13 @@ $(BUILD)/%.o: src/%.c src/bindings.h | $(BUILD)/.mruby-built
 $(BUILD)/bindings_video.o: third_party/fastlz/fastlz.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -marm -c src/bindings_video.c -o $@
 
+$(BUILD)/bindings_gfx.o: $(TJPGD)/.rubynds-$(TJPGD_SHA256)
+
 $(BUILD)/fastlz.o: third_party/fastlz/fastlz.c third_party/fastlz/fastlz.h | $(BUILD)/.mruby-built
 	$(CC) $(CPPFLAGS) $(CFLAGS) -marm -c $< -o $@
+
+$(BUILD)/tjpgd.o: $(TJPGD)/.rubynds-$(TJPGD_SHA256) | $(BUILD)/.mruby-built
+	$(CC) $(CPPFLAGS) $(CFLAGS) -marm -c $(TJPGD)/src/tjpgd.c -o $@
 
 $(APP_BUILD)/app_bytecode.o: $(APP_BUILD)/app_bytecode.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
