@@ -10,6 +10,7 @@ void register_gfx_bindings(mrb_state *mrb);
 void register_video_bindings(mrb_state *mrb);
 void register_fs_bindings(mrb_state *mrb);
 void register_audio_bindings(mrb_state *mrb);
+void register_mp3_bindings(mrb_state *mrb);
 void register_system_bindings(mrb_state *mrb);
 
 void gfx_init(void);
@@ -18,6 +19,7 @@ void gfx_video_end(void);
 void fs_shutdown(void);
 void tls_shutdown(void);
 void audio_shutdown(void);
+void mp3_shutdown(void);
 void video_shutdown(void);
 
 #endif

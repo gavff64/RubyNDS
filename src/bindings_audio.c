@@ -8,7 +8,7 @@
 
 #include "bindings.h"
 
-#define AUDIO_MAX_RATE 32768
+#define AUDIO_MAX_RATE 48000
 #define AUDIO_DEFAULT_BUFFER 4096
 #define AUDIO_MIN_BUFFER 64
 #define AUDIO_MAX_BUFFER 65536
@@ -131,7 +131,7 @@ static mrb_value audio_open(mrb_state *mrb, mrb_value self)
   mrb_int buffer_length = mrb_as_int(mrb, kw_values[3]);
 
   if (rate < 1024 || rate > AUDIO_MAX_RATE)
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: sample_rate must be 1024..32768");
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: sample_rate must be 1024..48000");
   if (bits != 8 && bits != 16)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.open: bits must be 8 or 16");
   if (channels != 1 && channels != 2)
@@ -186,7 +186,7 @@ static mrb_value audio_sample_load(mrb_state *mrb, mrb_value self)
   mrb_int length = RSTRING_LEN(data);
 
   if (rate < 1024 || rate > AUDIO_MAX_RATE)
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: sample_rate must be 1024..32768");
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: sample_rate must be 1024..48000");
   if (bits != 8 && bits != 16)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Audio.sample_load: bits must be 8 or 16");
   if (length <= 0 || length % 4 != 0)

@@ -19,7 +19,7 @@ P.S. I am not an author, so sorry if this sucks balls lol 👎. There's a ton to
 - [Application loop](#application-loop)
 - [Low-level API](#low-level-api)
 - [High-level API](#high-level-api)
-- [R15I and R15V](#r15i-and-r15v-images-and-video)
+- [Images, video and audio](#images-video-and-audio)
 - [Limitations](#limitations)
 
 ## Getting started
@@ -578,10 +578,15 @@ while System.main_loop?
 end
 ```
 
-## R15I and R15V [Images and Video]
+## Images, video and audio
+
+The goal with this was to have 3 good formats for local playback, and 3 good formats for internet playback. I needed a balance between format popularity, file size, and computational efficiency.
+R15I, R15V and PCM are intended for local use. JPEG, MJPEG, and MP3 are intended for remote (internet) use. They can be used interchangeably though.
+
+### R15I and R15V
 
 R15I (RGB15 Image) and R15V (RGB15 Video) are both my attempt at designing formats to display images and high(-ish) frame rate color video, without a
-massive `.nds` file or heavy on-device decoding, or massive bindings.
+massive `.nds` file or heavy on-device decoding, or massive bindings. These file formats (alongside PCM) are meant for local media.
 
 RGB15 is the DS's 15-bit RGB color format, which is 5 bits each for red, green, and blue. You put regular PNG, JPG, MP4, whatever into the [assets](./assets)
 folder, and the [Makefile](./Makefile) + [tools](./tools) convert them to RGB15 using [FFmpeg](https://ffmpeg.org/). So the DS doesn't do any decoding, it just displays the pre-formatted data
@@ -597,11 +602,24 @@ These frames are compressed with [FastLZ](./third_party/fastlz), which the DS ca
 data on their own. But of course audio syncing works as shown previously. Video runs at 24 FPS max, which feels smooth. I guess this means the DS
 is technically decoding video, but not in the practical sense? It's mostly just decompressing.
 
+### PCM
+
+PCM is simply pre-decoded audio that the DS hardware handles directly. PCM8 and PCM16 is used, however ADPCM is unforetunately not supported due to self-incompetence lol
+(from what I read, it seems difficult to work with. But the payoff could be huge, so likely worth looking more into.)
+
+### JPEG/MJPEG
+
+Fortunately, [this godsend, TJpgDec](https://elm-chan.org/fsw/tjpgd/00index.html) exists which gives super tiny and lightweight JPEG support, and a sweet side effect of that is
+MJPEG support. TJpgDec simply decompresses small sections of the frame and writes the RGB15 pixels onto the DS screen. I'm not sure how fast MJPEG playback is on this, but I was able
+to successfully play a 10 fps low quality livestream.
+
+### MP3
+
+Using the [OpenCORE MP3 decoder](https://android.googlesource.com/platform/frameworks/av/+/ee17317c6362f54bd311ec359b5c3518137fae9f/media/libstagefright/codecs/mp3dec/) we can convert
+buffered MP3 data into PCM16 audio. Both HTTP and HTTPS in RubyNDS read the server's Content-Type to see if the stream contains MP3 data, then creates an MP3 stream automatically.
+
 ## Limitations
 
-A lot, but also not that much. Can't be bothered to type that out right now. Outside of incomplete mrbgems and bindings (since those aren't
-limitations, I just haven't finished them), the inherent limitations would be less performance than writing in pure C, obviously. But also the
-lack of a possible on-device audio and video decoder. (Edit: currently experimenting with MJPEG)
-
-From my research, there are some projects that can decode video and audio on-device, but they seem to use specific file formats and are extremely
-computationally expensive. Interacting with everyday audio and video on the internet may not be possible without a relay server.
+A lot, but also not that much. Can't be bothered to type that out right now. The big one would be on-device media decoders severely limiting what internet content can be accessed without
+a relay server. Currently I think there's a solid trio of supported codecs that can be used and worked around, but I do not want a significant portion of the project just being codec support.
+As with most things here, I barely know what I am doing!!

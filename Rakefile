@@ -1,6 +1,6 @@
 require "fileutils"
 
-TOOLS = %w[make git curl unzip sha256sum cc ffmpeg ffprobe]
+TOOLS = %w[make git curl tar unzip sha256sum cc ffmpeg ffprobe]
 
 def command?(command)
   ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).any? do |path|

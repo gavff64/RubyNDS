@@ -1,9 +1,12 @@
 module HTTPS
   class Stream
-    def initialize(sock, pending, length)
+    attr_reader :content_type
+
+    def initialize(sock, pending, length, content_type)
       @sock = sock
       @pending = pending
       @length = length
+      @content_type = content_type
       @read = 0
       @closed = false
     end
@@ -94,8 +97,10 @@ module HTTPS
       raise "unsupported transfer encoding" if headers.match(/\r\nTransfer-Encoding:/i)
       size = headers.match(/\r\nContent-Length:\s*(\d+)\s*(?:\r\n|\z)/i)
       length = size ? size[1].to_i : nil
+      type = headers.match(/\r\nContent-Type:\s*([^\s;]+)/i)
+      content_type = type ? type[1].downcase : nil
       pending = response.byteslice(header_end + 4, response.bytesize - header_end - 4) || ""
-      Stream.new(sock, pending, length)
+      Stream.new(sock, pending, length, content_type)
     rescue
       TLS.close
       Net.close(sock)

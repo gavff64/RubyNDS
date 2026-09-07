@@ -8,6 +8,8 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
   @offset = 0
 
   def self.load(audio, stream: false, sample_rate: 32000)
+    return MP3Stream.new(audio) if audio.respond_to?(:content_type) && audio.content_type == "audio/mpeg"
+
     if audio.is_a?(String)
       bits = audio.end_with?(".pcm") ? 16 : 8
       channels = 2
@@ -33,9 +35,9 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
     unless @playing && @stream == audio
       stop if @playing
 
-      sample_rate = audio.is_a?(PCMFile) ? audio.sample_rate : 32000
-      bits = audio.is_a?(PCMFile) ? audio.bits : 16
-      channels = audio.is_a?(PCMFile) ? audio.channels : 2
+      sample_rate = audio.respond_to?(:sample_rate) ? audio.sample_rate : 32000
+      bits = audio.respond_to?(:bits) ? audio.bits : 16
+      channels = audio.respond_to?(:channels) ? audio.channels : 2
       Audio.open(sample_rate: sample_rate, bits: bits, channels: channels,
                  buffer_length: buffer_length)
       @stream = audio
@@ -109,6 +111,87 @@ module Audio # this is an extension layer. The C binding already has .open, .upd
 end
 
 module Audio # I know this is kinda dumb to specify twice
+  class MP3Stream
+    attr_reader :sample_rate, :channels
+
+    def initialize(stream)
+      @stream = stream
+      @compressed = ""
+      @offset = 0
+      @first = nil
+      @sample_rate = nil
+      @channels = nil
+      @eof = false
+      @closed = false
+      MP3.open
+
+      until @first
+        @first = decode
+        raise "MP3 stream ended before audio was found" if @first == ""
+        System.vblank unless @first
+      end
+    rescue
+      close
+      raise
+    end
+
+    def bits
+      16
+    end
+
+    def read
+      if @first
+        pcm = @first
+        @first = nil
+        return pcm
+      end
+
+      decode
+    end
+
+    def close
+      return if @closed
+
+      @stream.close
+      MP3.close
+      @closed = true
+    end
+
+    def decode
+      available = @compressed.bytesize - @offset
+
+      if @offset >= 16384
+        @compressed = @compressed.byteslice(@offset, available) || ""
+        @offset = 0
+        available = @compressed.bytesize
+      end
+
+      if available < 4096 && !@eof
+        chunk = @stream.read
+        if chunk == ""
+          @eof = true
+        elsif chunk
+          @compressed << chunk
+        end
+        available = @compressed.bytesize - @offset
+      end
+
+      return "" if @eof && available == 0
+      return nil if available < 4096 && !@eof
+
+      pcm, used, rate, channels = MP3.decode(@compressed, @offset, available)
+      @offset += used
+
+      unless pcm.empty?
+        @sample_rate = rate
+        @channels = channels
+        return pcm
+      end
+
+      nil
+    end
+  end
+
   class PCMFile
     def initialize(path, sample_rate, bits, channels)
       @file = FS.open(path)

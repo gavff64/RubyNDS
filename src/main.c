@@ -29,6 +29,7 @@ int main(void)
     register_video_bindings(mrb);
     register_fs_bindings(mrb);
     register_audio_bindings(mrb);
+    register_mp3_bindings(mrb);
     register_system_bindings(mrb);
 
     mrb_load_irep(mrb, app_bytecode);
@@ -40,6 +41,7 @@ int main(void)
     video_shutdown();
     tls_shutdown();
     audio_shutdown();
+    mp3_shutdown();
     fs_shutdown();
     mrb_close(mrb);
   }

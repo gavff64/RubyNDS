@@ -5,9 +5,12 @@ module HTTP
 
   # Nested class so every streaming request has it's own object and separate states.
   class Stream
-    def initialize(sock, pending)
+    attr_reader :content_type
+
+    def initialize(sock, pending, content_type)
       @sock = sock
       @pending = pending # If we get some data after the headers in the same frame, store it. Should be a once per request thing.
+      @content_type = content_type
       @eof = false # Has the server ended the response?
       @closed = false # Has the object closed its own socket?
     end
@@ -75,9 +78,12 @@ module HTTP
       header_end = buffer.index("\r\n\r\n")
     end
 
+    headers = buffer.byteslice(0, header_end)
+    type = headers.match(/\r\nContent-Type:\s*([^\s;]+)/i)
+    content_type = type ? type[1].downcase : nil
     pending = buffer.byteslice(header_end + 4, buffer.bytesize - header_end - 4) || "" # runs when header_end is found obviously
     Net.nonblock(sock, true) # switch to non-blocking mode since we have the complete response header (recieved from blocking reads)
-    Stream.new(sock, pending) # object keeps access to the open socket and gives it some bytes we may have recieved in that time already.
+    Stream.new(sock, pending, content_type) # object keeps access to the open socket and gives it some bytes we may have recieved in that time already.
   end
 
   def self.request(method, url, body, port, stream, content_type)
