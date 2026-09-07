@@ -80,8 +80,8 @@ module HTTP
     Stream.new(sock, pending) # object keeps access to the open socket and gives it some bytes we may have recieved in that time already.
   end
 
-  def self.get(url, port: 80, stream: false)
-    raise "use HTTPS.get for HTTPS URLs" if url.downcase.start_with?("https://")
+  def self.request(method, url, body, port, stream, content_type)
+    raise "use HTTPS for HTTPS URLs" if url.downcase.start_with?("https://")
     ensure_wifi!
     match = url.match(/\A(?:https?:\/\/)?([^\/?#:]+)(?::(\d+))?/)
     host = match[1]
@@ -95,12 +95,16 @@ module HTTP
     host_header = port == 80 ? host : "#{host}:#{port}"
 
     request_lines = [
-      "GET #{path} HTTP/1.1",
+      "#{method} #{path} HTTP/1.1",
       "Host: #{host_header}",
-      "User-Agent: curl/8.0",
-      "Connection: close"
+      "User-Agent: curl/8.0"
     ]
-    request = request_lines.join("\r\n") + "\r\n\r\n"
+    if body
+      request_lines << "Content-Type: #{content_type}"
+      request_lines << "Content-Length: #{body.bytesize}"
+    end
+    request_lines << "Connection: close"
+    request = request_lines.join("\r\n") + "\r\n\r\n" + (body || "")
 
     if stream
       return stream_bytes(sock, request)
@@ -119,5 +123,13 @@ module HTTP
       response = response[(header_end + 4)..-1]
       return response
     end
+  end
+
+  def self.get(url, port: 80, stream: false)
+    request("GET", url, nil, port, stream, nil)
+  end
+
+  def self.post(url, body, port: 80, content_type: "application/x-www-form-urlencoded")
+    request("POST", url, body, port, false, content_type)
   end
 end

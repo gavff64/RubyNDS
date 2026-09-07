@@ -45,7 +45,7 @@ module HTTPS
     end
   end
 
-  def self.open_stream(url, port, seed)
+  def self.open_stream(url, port, seed, method = "GET", body = nil, content_type = nil)
     raise "invalid HTTPS URL" if url.match(/[\x00-\x20\x7f]/)
     match = url.match(/\A(?:https:\/\/)?([^\/?#:@]+)(?::(\d+))?([\/?#].*)?\z/)
     raise "invalid HTTPS URL" unless match
@@ -63,13 +63,17 @@ module HTTPS
     begin
       TLS.open(sock, host)
       request_lines = [
-        "GET #{path} HTTP/1.0",
+        "#{method} #{path} HTTP/1.0",
         "Host: #{host_header}",
         "User-Agent: curl/8.0",
-        "Accept-Encoding: identity",
-        "Connection: close"
+        "Accept-Encoding: identity"
       ]
-      request = request_lines.join("\r\n") + "\r\n\r\n"
+      if body
+        request_lines << "Content-Type: #{content_type}"
+        request_lines << "Content-Length: #{body.bytesize}"
+      end
+      request_lines << "Connection: close"
+      request = request_lines.join("\r\n") + "\r\n\r\n" + (body || "")
 
       offset = 0
       while offset < request.bytesize
@@ -99,10 +103,7 @@ module HTTPS
     end
   end
 
-  def self.get(url, port: 443, seed: "fat:/tls.seed", stream: false)
-    source = open_stream(url, port, seed)
-    return source if stream
-
+  def self.read_all(source)
     body = ""
     begin
       loop do
@@ -114,5 +115,15 @@ module HTTPS
       source.close
     end
     body
+  end
+
+  def self.get(url, port: 443, seed: "fat:/tls.seed", stream: false)
+    source = open_stream(url, port, seed)
+    return source if stream
+    read_all(source)
+  end
+
+  def self.post(url, body, port: 443, seed: "fat:/tls.seed", content_type: "application/x-www-form-urlencoded")
+    read_all(open_stream(url, port, seed, "POST", body, content_type))
   end
 end

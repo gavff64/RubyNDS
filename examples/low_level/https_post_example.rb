@@ -1,8 +1,8 @@
-HOST = "api.github.com"
+HOST = "httpbin.org"
 PORT = 443
-PATH = "/repos/mruby/mruby"
+PATH = "/post"
+BODY = "message=Hello+from+RubyNDS"
 
-puts "Fetching mruby from GitHub..."
 TLS.seed("fat:/tls.seed")
 Net.wifi
 sock = Net.connect(HOST, PORT)
@@ -11,13 +11,15 @@ begin
   opened = TLS.open(sock, HOST)
 
   request_lines = [
-    "GET #{PATH} HTTP/1.0",
+    "POST #{PATH} HTTP/1.0",
     "Host: #{HOST}",
-    "User-Agent: RubyNDS",
+    "User-Agent: curl/8.0",
     "Accept-Encoding: identity",
+    "Content-Type: application/x-www-form-urlencoded",
+    "Content-Length: #{BODY.bytesize}",
     "Connection: close"
   ]
-  request = request_lines.join("\r\n") + "\r\n\r\n"
+  request = request_lines.join("\r\n") + "\r\n\r\n" + BODY
 
   offset = 0
   while offset < request.bytesize
@@ -38,12 +40,6 @@ end
 header_end = response.index("\r\n\r\n")
 raise "HTTPS response ended before the headers were complete" unless header_end
 response = response[(header_end + 4)..-1]
-repository = JSON.parse(response)
+result = JSON.parse(response)
 
-if repository["message"]
-  puts repository["message"]
-else
-  puts "Repository: #{repository["full_name"]}"
-  puts "Stars: #{repository["stargazers_count"]}"
-  puts "Forks: #{repository["forks_count"]}"
-end
+puts result["form"]["message"]

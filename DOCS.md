@@ -529,12 +529,30 @@ stream = HTTP.get("192.168.1.10/music.pcm", port: 8123, stream: true)
 # stream.close
 ```
 
+As well as post requests:
+
+```ruby
+body = "message=Hello+from+RubyNDS"
+response = HTTP.post("http://httpbin.org/post", body)
+result = JSON.parse(response)
+
+puts result["form"]["message"]
+```
+
 ### `HTTPS`
 
 Same functionality as HTTP:
 
 ```ruby
 HTTPS.get("https://example.com", port: 443)
+```
+
+```ruby
+body = "message=Hello+from+RubyNDS"
+response = HTTPS.post("https://httpbin.org/post", body)
+result = JSON.parse(response)
+
+puts result["form"]["message"]
 ```
 
 You can specify the seed location if for some reason it's not in the root of the SD card:

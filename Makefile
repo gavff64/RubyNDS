@@ -2,7 +2,7 @@ DEVKITPRO ?= /opt/devkitpro
 DEVKITARM ?= $(DEVKITPRO)/devkitARM
 LIBNDS    ?= $(DEVKITPRO)/libnds
 
-GAME ?= examples/high_level/http_example.rb
+GAME ?= examples/high_level/http_get_example.rb
 NAME := $(basename $(notdir $(GAME)))
 
 BUILD       := build
