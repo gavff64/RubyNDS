@@ -48,6 +48,13 @@ module HTTPS
     end
   end
 
+  def self.seed_tls(path)
+    TLS.seed(path)
+  rescue
+    raise unless path == "sd:/tls.seed"
+    TLS.seed("fat:/tls.seed")
+  end
+
   def self.open_stream(url, port, seed, method = "GET", body = nil, content_type = nil)
     raise "invalid HTTPS URL" if url.match(/[\x00-\x20\x7f]/)
     match = url.match(/\A(?:https:\/\/)?([^\/?#:@]+)(?::(\d+))?([\/?#].*)?\z/)
@@ -59,7 +66,7 @@ module HTTPS
     path = "/#{path}" unless path.start_with?("/")
     host_header = port == 443 ? host : "#{host}:#{port}"
 
-    TLS.seed(seed)
+    seed_tls(seed)
     HTTP.ensure_wifi!
     sock = Net.connect(host, port)
 
@@ -122,13 +129,13 @@ module HTTPS
     body
   end
 
-  def self.get(url, port: 443, seed: "fat:/tls.seed", stream: false)
+  def self.get(url, port: 443, seed: "sd:/tls.seed", stream: false)
     source = open_stream(url, port, seed)
     return source if stream
     read_all(source)
   end
 
-  def self.post(url, body, port: 443, seed: "fat:/tls.seed", content_type: "application/x-www-form-urlencoded")
+  def self.post(url, body, port: 443, seed: "sd:/tls.seed", content_type: "application/x-www-form-urlencoded")
     read_all(open_stream(url, port, seed, "POST", body, content_type))
   end
 end
