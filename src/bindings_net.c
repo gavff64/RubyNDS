@@ -68,6 +68,52 @@ static mrb_value net_connect(mrb_state *mrb, mrb_value self)
   return mrb_int_value(mrb, s);
 }
 
+static mrb_value net_listen(mrb_state *mrb, mrb_value self)
+{
+  mrb_int port, backlog = 1;
+  mrb_get_args(mrb, "i|i", &port, &backlog);
+
+  if (port < 0 || port > 65535)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Net.listen: port must be 0..65535");
+  if (backlog < 1)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Net.listen: backlog must be positive");
+
+  int s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0)
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Net.listen: socket failed");
+
+  int enabled = 1;
+  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof enabled);
+
+  struct sockaddr_in sa;
+  memset(&sa, 0, sizeof sa);
+  sa.sin_family = AF_INET;
+  sa.sin_port = htons((uint16_t)port);
+  sa.sin_addr.s_addr = INADDR_ANY;
+
+  if (bind(s, (struct sockaddr *)&sa, sizeof sa) < 0 || listen(s, (int)backlog) < 0) {
+    closesocket(s);
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Net.listen: failed");
+  }
+  return mrb_int_value(mrb, s);
+}
+
+static mrb_value net_accept(mrb_state *mrb, mrb_value self)
+{
+  mrb_int sock;
+  mrb_get_args(mrb, "i", &sock);
+
+  struct sockaddr_in sa;
+  socklen_t len = sizeof sa;
+  int s = accept((int)sock, (struct sockaddr *)&sa, &len);
+  if (s < 0) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK)
+      return mrb_nil_value();
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Net.accept: failed");
+  }
+  return mrb_int_value(mrb, s);
+}
+
 static mrb_value net_send(mrb_state *mrb, mrb_value self)
 {
   mrb_int sock;
@@ -133,6 +179,8 @@ void register_net_bindings(mrb_state *mrb)
   mrb_define_module_function(mrb, net, "ip",      net_ip,      MRB_ARGS_NONE());
   mrb_define_module_function(mrb, net, "dns",     net_dns,     MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, net, "connect", net_connect, MRB_ARGS_REQ(2));
+  mrb_define_module_function(mrb, net, "listen",  net_listen,  MRB_ARGS_ARG(1, 1));
+  mrb_define_module_function(mrb, net, "accept",  net_accept,  MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, net, "send",    net_send,    MRB_ARGS_REQ(2));
   mrb_define_module_function(mrb, net, "recv",    net_recv,    MRB_ARGS_REQ(2));
   mrb_define_module_function(mrb, net, "nonblock", net_nonblock, MRB_ARGS_REQ(2));
