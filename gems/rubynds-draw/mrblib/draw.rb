@@ -117,6 +117,7 @@ module Draw
         @data = @data.byteslice(-1, 1) if !first && @data.bytesize > 4096
 
         chunk = @stream.read(1024)
+        next unlesss chunk
         if chunk == ""
           close
           return nil
