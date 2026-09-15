@@ -249,6 +249,10 @@ module Draw
     @video = nil
   end
 
+  def self.stretch(width, height, screen = :top)
+    Gfx.stretch(screen, width, height)
+  end
+
   def self.pixel(x, y, color, screen = :top)
     Gfx.fill_rect(screen, x, y, 1, 1, color)
   end

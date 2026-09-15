@@ -105,7 +105,7 @@ $(TJPGD)/.rubynds-$(TJPGD_SHA256):
 	echo "$(TJPGD_SHA256)  $(TJPGD)/tjpgd.zip" | sha256sum -c -
 	unzip -oq $(TJPGD)/tjpgd.zip -d $(TJPGD)
 	sed -i 's/#define[[:space:]]*JD_FORMAT[[:space:]]*0/#define JD_FORMAT 1/' $(TJPGD)/src/tjpgdcnf.h
-	sed -i 's/#define[[:space:]]*JD_FASTDECODE[[:space:]]*0/#define JD_FASTDECODE 1/' $(TJPGD)/src/tjpgdcnf.h
+	sed -i 's/#define[[:space:]]*JD_FASTDECODE[[:space:]]*0/#define JD_FASTDECODE 2/' $(TJPGD)/src/tjpgdcnf.h
 	touch $@
 
 $(ASSET_STAMP): tools/assets.rb $(NITROFS_FILES) $(VIDEO_ENCODER)

@@ -13,9 +13,11 @@
 
 static u16 *s_fb = NULL;
 static u16 *s_bottom_fb = NULL;
+static int s_bg = 0;
+static int s_bottom_bg = 0;
 static bool s_video = false;
 static bool s_bottom_terminal = true;
-static u32 s_jpeg_work[1024];
+static u32 s_jpeg_work[3072];
 
 typedef struct {
   const u8 *data;
@@ -61,14 +63,14 @@ void gfx_init(void)
 {
   videoSetMode(MODE_5_2D);
   vramSetBankA(VRAM_A_MAIN_BG);
-  int bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-  s_fb = bgGetGfxPtr(bg);
+  s_bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
+  s_fb = bgGetGfxPtr(s_bg);
 }
 
 u8 *gfx_video_begin(const u16 *palette)
 {
-  int bg = bgInit(3, BgType_Bmp8, BgSize_B8_256x256, 0, 0);
-  u8 *framebuffer = (u8 *)bgGetGfxPtr(bg);
+  s_bg = bgInit(3, BgType_Bmp8, BgSize_B8_256x256, 0, 0);
+  u8 *framebuffer = (u8 *)bgGetGfxPtr(s_bg);
   int background = 0;
   int darkness = 94;
 
@@ -92,8 +94,8 @@ void gfx_video_end(void)
 {
   if (!s_video)
     return;
-  int bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-  s_fb = bgGetGfxPtr(bg);
+  s_bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
+  s_fb = bgGetGfxPtr(s_bg);
   dmaFillWords(0, s_fb, 256 * 256 * 2);
   s_video = false;
 }
@@ -223,8 +225,8 @@ static mrb_value gfx_bottom_mode(mrb_state *mrb, mrb_value self)
   if (strcmp(name, "graphics") == 0 && s_bottom_terminal) {
     videoSetModeSub(MODE_5_2D);
     vramSetBankC(VRAM_C_SUB_BG);
-    int bg = bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
-    s_bottom_fb = bgGetGfxPtr(bg);
+    s_bottom_bg = bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
+    s_bottom_fb = bgGetGfxPtr(s_bottom_bg);
     dmaFillWords(0, s_bottom_fb, 256 * 256 * 2);
     s_bottom_terminal = false;
   }
@@ -239,6 +241,27 @@ static mrb_value gfx_bottom_mode(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
+static mrb_value gfx_stretch(mrb_state *mrb, mrb_value self)
+{
+  mrb_sym screen;
+  mrb_int width, height;
+  mrb_get_args(mrb, "nii", &screen, &width, &height);
+
+  if (width <= 0 || width > 256 || height <= 0 || height > 192)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "size must fit within 256x192");
+
+  const char *name = mrb_sym_name(mrb, screen);
+  if (strcmp(name, "top") == 0)
+    bgSetScale(s_bg, width, height * 4 / 3);
+  else if (strcmp(name, "bottom") == 0 && !s_bottom_terminal)
+    bgSetScale(s_bottom_bg, width, height * 4 / 3);
+  else
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "screen must use graphics mode");
+
+  bgUpdate();
+  return mrb_nil_value();
+}
+
 void register_gfx_bindings(mrb_state *mrb)
 {
   struct RClass *gfx = mrb_define_module(mrb, "Gfx");
@@ -246,4 +269,5 @@ void register_gfx_bindings(mrb_state *mrb)
   mrb_define_module_function(mrb, gfx, "fill_rect", gfx_fill_rect, MRB_ARGS_REQ(6));
   mrb_define_module_function(mrb, gfx, "jpeg",      gfx_jpeg,      MRB_ARGS_ARG(4, 1));
   mrb_define_module_function(mrb, gfx, "bottom_mode", gfx_bottom_mode, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, gfx, "stretch",   gfx_stretch,   MRB_ARGS_REQ(3));
 }
