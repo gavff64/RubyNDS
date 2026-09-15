@@ -35,6 +35,10 @@ module HTTPS
       chunk
     end
 
+    def write(data)
+      HTTPS.write_all_bytes(data)
+    end
+
     def eof?
       @closed
     end
@@ -53,6 +57,14 @@ module HTTPS
   rescue
     raise unless path == "sd:/tls.seed"
     TLS.seed("fat:/tls.seed")
+  end
+
+  def self.write_all_bytes(data)
+    offset = 0
+    while offset < data.bytesize
+      offset += TLS.send(data.byteslice(offset, data.bytesize - offset))
+    end
+    offset
   end
 
   def self.open_stream(url, port, seed, method = "GET", body = nil, content_type = nil)
@@ -85,10 +97,7 @@ module HTTPS
       request_lines << "Connection: close"
       request = request_lines.join("\r\n") + "\r\n\r\n" + (body || "")
 
-      offset = 0
-      while offset < request.bytesize
-        offset += TLS.send(request.byteslice(offset, request.bytesize - offset))
-      end
+      write_all_bytes(request)
 
       response = ""
       header_end = nil

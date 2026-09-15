@@ -35,6 +35,10 @@ module HTTP
       return chunk
     end
 
+    def write(data)
+      HTTP.write_all_bytes(@sock, data)
+    end
+
     def eof?
       @eof
     end
@@ -52,12 +56,13 @@ module HTTP
     @wifi_initialized = true
   end
 
-  def self.write_all_bytes(sock, request)
-    offset = 0 # start at beginning of request
-    while offset < request.bytesize # keep going until every byte has been sent
-      written = Net.send(sock, request.byteslice(offset, request.bytesize - offset)) # number of bytes that went out
-      offset += written # add up/keep track of total number of bytes that went out
+  def self.write_all_bytes(sock, data)
+    offset = 0 # start at beginning of data
+    while offset < data.bytesize # keep going until every byte has been sent
+      written = Net.send(sock, data.byteslice(offset, data.bytesize - offset)) # number of bytes that went out
+      offset += written if written # add up/keep track of total number of bytes that went out
     end
+    offset
   end
 
   def self.stream_bytes(sock, request)
