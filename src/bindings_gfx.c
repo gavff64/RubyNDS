@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "bindings.h"
-#include "tjpgd.h"
+#include "JPEGDEC.h"
 
 #define GFX_SCREEN_W 256
 #define GFX_SCREEN_H 192
@@ -17,43 +17,16 @@ static int s_bg = 0;
 static int s_bottom_bg = 0;
 static bool s_video = false;
 static bool s_bottom_terminal = true;
-static u32 s_jpeg_work[3072];
+static JPEGIMAGE s_jpeg __attribute__((section(".itcm"), aligned(32)));
 
-typedef struct {
-  const u8 *data;
-  size_t length;
-  size_t offset;
-  u16 *framebuffer;
-  int x;
-  int y;
-} jpeg_state_t;
-
-static size_t jpeg_input(JDEC *decoder, u8 *buffer, size_t length)
+static int jpeg_output(JPEGDRAW *draw)
 {
-  jpeg_state_t *state = decoder->device;
-  size_t available = state->length - state->offset;
-  if (length > available)
-    length = available;
-  if (buffer)
-    memcpy(buffer, state->data + state->offset, length);
-  state->offset += length;
-  return length;
-}
+  u16 *framebuffer = draw->pUser;
 
-static int jpeg_output(JDEC *decoder, void *bitmap, JRECT *rect)
-{
-  jpeg_state_t *state = decoder->device;
-  u16 *source = bitmap;
-  int width = rect->right - rect->left + 1;
-
-  for (int row = rect->top; row <= rect->bottom; row++) {
-    u16 *dest = state->framebuffer + (state->y + row) * GFX_PITCH_PX +
-      state->x + rect->left;
-    for (int column = 0; column < width; column++) {
-      u16 pixel = *source++;
-      dest[column] = (1 << 15) | (pixel >> 11) |
-        ((pixel >> 6 & 31) << 5) | ((pixel & 31) << 10);
-    }
+  for (int row = 0; row < draw->iHeight; row++) {
+    u16 *source = draw->pPixels + row * draw->iWidth;
+    u16 *dest = framebuffer + (draw->y + row) * GFX_PITCH_PX + draw->x;
+    memcpy(dest, source, draw->iWidthUsed * 2);
   }
 
   return 1;
@@ -191,27 +164,19 @@ static mrb_value gfx_jpeg(mrb_state *mrb, mrb_value self)
   if (!framebuffer)
     return mrb_nil_value();
 
-  jpeg_state_t state;
-  state.data = (const u8 *)RSTRING_PTR(data);
-  state.length = RSTRING_LEN(data);
-  state.offset = 0;
-  state.framebuffer = framebuffer;
-  state.x = x;
-  state.y = y;
-
-  JDEC decoder;
-  JRESULT result = jd_prepare(&decoder, jpeg_input, s_jpeg_work, sizeof s_jpeg_work, &state);
-  if (result != JDR_OK)
+  if (!JPEG_openRAM(&s_jpeg, (u8 *)RSTRING_PTR(data), RSTRING_LEN(data), jpeg_output))
     mrb_raise(mrb, E_RUNTIME_ERROR, "Gfx.jpeg: invalid JPEG");
 
   int unit = 1 << scale;
-  int width = (decoder.width + unit - 1) >> scale;
-  int height = (decoder.height + unit - 1) >> scale;
+  int width = (s_jpeg.iWidth + unit - 1) >> scale;
+  int height = (s_jpeg.iHeight + unit - 1) >> scale;
+  if (x == -1) x = (GFX_SCREEN_W - width) / 2;
+  if (y == -1) y = (GFX_SCREEN_H - height) / 2;
   if (x < 0 || y < 0 || x + width > GFX_SCREEN_W || y + height > GFX_SCREEN_H)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "Gfx.jpeg: image must fit within 256x192");
 
-  result = jd_decomp(&decoder, jpeg_output, scale);
-  if (result != JDR_OK)
+  s_jpeg.pUser = framebuffer;
+  if (!JPEG_decode(&s_jpeg, x, y, scale ? 1 << scale : 0))
     mrb_raise(mrb, E_RUNTIME_ERROR, "Gfx.jpeg: decode failed");
   return mrb_nil_value();
 }

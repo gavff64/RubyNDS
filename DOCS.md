@@ -609,8 +609,8 @@ PCM is simply pre-decoded audio that the DS hardware handles directly. PCM8 and 
 
 ### `JPEG/MJPEG`
 
-Fortunately, [this godsend, TJpgDec](https://elm-chan.org/fsw/tjpgd/00index.html) exists which gives super tiny and lightweight JPEG support, and a sweet side effect of that is
-MJPEG support. TJpgDec simply decompresses small sections of the frame and writes the RGB15 pixels onto the DS screen. I'm not sure how fast MJPEG playback is on this, but I was able
+Fortunately, [this godsend, JPEGDEC](https://github.com/bitbank2/JPEGDEC) exists which gives super tiny and lightweight JPEG support, and a sweet side effect of that is
+MJPEG support. JPEGDEC simply decompresses small sections of the frame and writes the RGB15 pixels onto the DS screen. I'm not sure how fast MJPEG playback is on this, but I was able
 to successfully play a 10 fps low quality livestream.
 
 ### `MP3`

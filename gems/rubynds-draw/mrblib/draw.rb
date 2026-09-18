@@ -103,9 +103,10 @@ module Draw
     def read
       return nil if @closed
 
+      first = @data.index("\xFF\xD8")
+      searched = first ? first + 2 : 0
       loop do
-        first = @data.index("\xFF\xD8")
-        last = @data.index("\xFF\xD9", first + 2) if first
+        last = @data.index("\xFF\xD9", searched) if first
 
         if last
           frame = @data.byteslice(first, last - first + 2)
@@ -113,16 +114,20 @@ module Draw
           return frame
         end
 
-        @data = @data.byteslice(first, @data.bytesize - first) if first && first > 0
-        @data = @data.byteslice(-1, 1) if !first && @data.bytesize > 4096
+        searched = [@data.bytesize - 1, first ? first + 2 : 0].max
 
-        chunk = @stream.read(1024)
-        next unless chunk
+        chunk = nil
+        chunk = @stream.read(1024) until chunk
         if chunk == ""
           close
           return nil
         end
         @data << chunk
+        unless first
+          first = @data.index("\xFF\xD8", searched)
+          searched = first + 2 if first
+          @data = @data.byteslice(-1, 1) if !first && @data.bytesize > 4096
+        end
       end
     end
 

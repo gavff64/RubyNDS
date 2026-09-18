@@ -115,7 +115,7 @@ RubyNDS is built on the work of many open-source projects:
 - [devkitPro](https://github.com/devkitPro) and its contributors for the toolchain and DS development ecosystem, including [libnds](https://github.com/devkitPro/libnds), [DSWifi](https://github.com/devkitPro/dswifi), [Maxmod](https://github.com/devkitPro/maxmod), [Calico](https://github.com/devkitPro/calico), and [libfat](https://github.com/devkitPro/libfat).
 - Ariya Hidayat for [FastLZ](https://github.com/ariya/FastLZ), used by R15V video.
 - Thomas Pornin for [BearSSL](https://bearssl.org/), used for on-device TLS and HTTPS.
-- ChaN for [TJpgDec](https://elm-chan.org/fsw/tjpgd/00index.html), used for JPEG and MJPEG decoding.
+- Larry Bank / BitBank Software for [JPEGDEC](https://github.com/bitbank2/JPEGDEC), used for JPEG and MJPEG decoding.
 - PacketVideo for the [OpenCORE MP3 decoder](https://android.googlesource.com/platform/frameworks/av/+/ee17317c6362f54bd311ec359b5c3518137fae9f/media/libstagefright/codecs/mp3dec/), used for MP3 decoding.
 
 All third-party components remain the property of their respective authors and are distributed under their respective licenses.

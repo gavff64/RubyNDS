@@ -1,0 +1,4 @@
+JPEGDEC by Larry Bank.
+Copyright 2020 BitBank Software, Inc. All Rights Reserved.
+
+RubyNDS changes: DS support, RGB15 tables, fast memory and pointer alignment.

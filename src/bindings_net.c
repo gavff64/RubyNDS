@@ -13,6 +13,7 @@
 #include "bindings.h"
 
 #define NET_RECV_MAX 16384
+static char s_recv_buffer[NET_RECV_MAX];
 
 static mrb_value net_wifi(mrb_state *mrb, mrb_value self)
 {
@@ -141,15 +142,13 @@ static mrb_value net_recv(mrb_state *mrb, mrb_value self)
   if (maxlen > NET_RECV_MAX)
     maxlen = NET_RECV_MAX;
 
-  mrb_value str = mrb_str_new(mrb, NULL, maxlen);
-  int n = recv((int)sock, RSTRING_PTR(str), (int)maxlen, 0);
+  int n = recv((int)sock, s_recv_buffer, (int)maxlen, 0);
   if (n < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK)
       return mrb_nil_value();
     mrb_raise(mrb, E_RUNTIME_ERROR, "Net.recv: recv failed");
   }
-  mrb_str_resize(mrb, str, n);
-  return str;
+  return mrb_str_new(mrb, s_recv_buffer, n);
 }
 
 static mrb_value net_nonblock(mrb_state *mrb, mrb_value self)
