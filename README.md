@@ -120,8 +120,10 @@ RubyNDS is built on the work of many open-source projects:
 
 All third-party components remain the property of their respective authors and are distributed under their respective licenses.
 
-## License
+## License and Contributing
 
-RubyNDS is available under the [MIT License](./LICENSE).
+Although RubyNDS is available under the [MIT License](./LICENSE), it would be greatly appreciated, and **highly encouraged** if you could please [contribute](./CONTRIBUTING.md) to this repository!
 
-You don't have to, but if you use RubyNDS for anything, please let me know! I'd love to see. 🙂
+Also, you don't have to, but if you use RubyNDS for anything, please let me know! I'd love to see. 🙂
+
+-[gavff](https://github.com/gavff64)
