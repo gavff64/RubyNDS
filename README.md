@@ -126,4 +126,8 @@ Although RubyNDS is available under the [MIT License](./LICENSE), it would be gr
 
 Also, you don't have to, but if you use RubyNDS for anything, please let me know! I'd love to see. 🙂
 
--[gavff](https://github.com/gavff64)
+<div align="right">
+
+~ [gavff](https://github.com/gavff64)
+
+</div>
