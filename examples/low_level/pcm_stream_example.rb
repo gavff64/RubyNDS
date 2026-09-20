@@ -1,4 +1,4 @@
-HOST = "192.168.12.189"
+HOST = "192.168.x.x" # obviously replace with your local ip
 PORT = 8123
 PATH = "/music.pcm"
 

@@ -1,3 +1,5 @@
+# This is a build time patch script that runs over JPEGDEC, it makes it so the library fits and functions on the DS.
+# The main purpose though is to rewrite the color tables to work with the DS' rgb15 format directly.
 directory = ARGV.fetch(0)
 
 %w[JPEGDEC.h jpeg.inl].each do |name|

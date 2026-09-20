@@ -1,4 +1,4 @@
-stream = HTTP.get("192.168.12.189/music.pcm", port: 8123, stream: true)
+stream = HTTP.get("192.168.x.x/music.pcm", port: 8123, stream: true) # obviously replace with your local ip
 music = Audio.load(stream)
 puts "Audio streaming through HTTP..."
 
