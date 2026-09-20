@@ -385,6 +385,12 @@ while System.main_loop?
 end
 ```
 
+Images and video can also be stretched to fill the screen with `Draw.stretch`, giving it the size of the incoming image:
+
+```ruby
+Draw.stretch(205, 154, :top)
+```
+
 Audio from videos will sync close enough if you play them next to each other. Video is always streamed, even if not specified. Bottom screen video support is not
 implemented. Supported source formats are GIF, MP4, MOV, MKV, WebM, and AVI.
 
@@ -436,7 +442,7 @@ DEFAULT_FONT = Font.new(8, 8, 32, FONT_DATA)
 Which describes the characters being 8 by 8 pixels, the first stored character has ASCII code 32, and FONT_DATA being a long string of
 bytes, each byte representing 1 horizontal row of 8 pixels.
 
-This is good enough for now but I should probably add to the tools section a converter to turn fonts into this format.
+To be brutally honest, this is a terrible implementation. I didn't spend much time on this, but I think the DS has to constantly redraw the text every loop so it's very inefficient and slow.
 
 ### `Audio`
 
@@ -501,6 +507,17 @@ while System.main_loop?
 end
 ```
 
+An FPS counter lives in here too, tick it once per loop and it prints the number once a second:
+
+```ruby
+fps = FPS.new
+
+while System.main_loop?
+  fps.tick
+  System.vblank
+end
+```
+
 ### `JSON`
 
 Not to be confused with the [mruby-json mrbgem](./gems/mruby-json) I didn't write. The original `JSON.parse` only accepted JSON text. I needed it to take a file path,
@@ -525,9 +542,12 @@ stream = HTTP.get("192.168.1.10/music.pcm", port: 8123, stream: true)
 # which gives access to...
 # stream.read
 # stream.read(maximum_bytes)
+# stream.write(data)
 # stream.eof?
 # stream.close
 ```
+
+`stream.write` sends bytes back over the same connection.
 
 As well as post requests:
 
@@ -610,8 +630,7 @@ PCM is simply pre-decoded audio that the DS hardware handles directly. PCM8 and 
 ### `JPEG/MJPEG`
 
 Fortunately, [this godsend, JPEGDEC](https://github.com/bitbank2/JPEGDEC) exists which gives super tiny and lightweight JPEG support, and a sweet side effect of that is
-MJPEG support. JPEGDEC simply decompresses small sections of the frame and writes the RGB15 pixels onto the DS screen. I'm not sure how fast MJPEG playback is on this, but I was able
-to successfully play a 10 fps low quality livestream.
+MJPEG support. JPEGDEC simply decompresses small sections of the frame and writes the RGB15 pixels onto the DS screen. MJPEG playback is surprisingly fast.
 
 ### `MP3`
 
