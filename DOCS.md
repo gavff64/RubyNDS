@@ -527,6 +527,39 @@ which means you would have to `FS.open`, read loop, close, every time. This does
 data = JSON.fs_parse("settings.json") # this really reads "nitro:/settings.json"
 ```
 
+### `TCP`
+
+General TCP connections:
+
+```ruby
+socket = TCP.connect("192.168.1.10", 8123)
+socket.write("hello\n")
+puts socket.read_exact(6)
+socket.close
+```
+
+`TCP.connect` connects to saved Wi-Fi once and returns a socket object. `write` sends the entire string, and `read_exact` collects the requested number of bytes even when they arrive in separate pieces.
+
+| Method | What it does |
+| --- | --- |
+| `read(maxlen = 4096)` | Returns available bytes, `nil` if none are ready, or `""` when closed. |
+| `read_exact(length)` | Waits for exactly this many bytes; returns `nil` if the connection ends early. |
+| `write(data)` | Sends all bytes and returns their count; returns `nil` if the connection closes early. |
+| `skip(length)` | Discards bytes in small chunks and returns their count; returns `nil` if the connection ends early. |
+| `eof?` / `closed?` | Checks whether the socket has closed. |
+| `close` | Closes the socket; repeated calls are safe. |
+
+Waiting operations call `System.vblank` when no progress is possible. Supply `on_wait:` to update input or other application state while waiting:
+
+```ruby
+socket = TCP.connect("192.168.1.10", 8123, on_wait: proc {
+  Input.update
+  System.main_loop? && !Input.down?(KEY_START)
+})
+```
+
+Returning `false` closes the socket and cancels the waiting operation. The initial Wi-Fi and TCP connection still use the blocking native calls. If a waiting operation ends early, any bytes already read or written have been consumed or sent. `skip` discards data in pieces of at most 1024 bytes.
+
 ### `HTTP`
 
 Inspired by [HTTParty](https://github.com/jnunemaker/httparty). Makes HTTP GET requests:
