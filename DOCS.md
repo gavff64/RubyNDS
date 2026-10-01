@@ -131,8 +131,7 @@ The low-level API maps closely to the native bindings and leaves application beh
 please see the examples for the general method usage structure.
 
 Some minor "exceptions" (if you want to call them that) would be video and HTTPS. They are present here, and you can see both low level and high level
-examples of HTTPS and video in the [examples](./examples). However, TLS seed generation on-device would be insecure, and true video decoding is close to impossible
-(or at least would require an LLM to build a huge system, defeating the purpose of this project). The [Makefile](./Makefile) + [tools](./tools) handle this at
+examples of HTTPS and video in the [examples](./examples). However, TLS seed generation on-device would be insecure. The [Makefile](./Makefile) + [tools](./tools) handle this at
 build time.
 
 ### `System`
@@ -442,7 +441,7 @@ DEFAULT_FONT = Font.new(8, 8, 32, FONT_DATA)
 Which describes the characters being 8 by 8 pixels, the first stored character has ASCII code 32, and FONT_DATA being a long string of
 bytes, each byte representing 1 horizontal row of 8 pixels.
 
-To be brutally honest, this is a terrible implementation. I didn't spend much time on this, but I think the DS has to constantly redraw the text every loop so it's very inefficient and slow.
+Honestly I don't think this is a great font implementation, will need updating.
 
 ### `Audio`
 
