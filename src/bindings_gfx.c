@@ -19,16 +19,43 @@ static bool s_video = false;
 static bool s_bottom_terminal = true;
 static JPEGIMAGE s_jpeg __attribute__((section(".itcm"), aligned(32)));
 
+static bool clip_rect(mrb_int *x, mrb_int *y, mrb_int *w, mrb_int *h)
+{
+  if (*w <= 0 || *h <= 0 || *x >= GFX_SCREEN_W || *y >= GFX_SCREEN_H ||
+      *x <= -*w || *y <= -*h)
+    return false;
+
+  if (*x < 0) { *w += *x; *x = 0; }
+  if (*y < 0) { *h += *y; *y = 0; }
+  if (*w > GFX_SCREEN_W - *x) *w = GFX_SCREEN_W - *x;
+  if (*h > GFX_SCREEN_H - *y) *h = GFX_SCREEN_H - *y;
+  return true;
+}
+
+static void blit_rect(u16 *framebuffer, mrb_int x, mrb_int y,
+                      mrb_int w, mrb_int h, const u8 *pixels, mrb_int pitch)
+{
+  mrb_int source_x = x, source_y = y;
+  if (!clip_rect(&x, &y, &w, &h))
+    return;
+
+  pixels += ((size_t)(y - source_y) * pitch + (x - source_x)) * 2;
+  for (mrb_int row = 0; row < h; row++) {
+    const u8 *source = pixels + (size_t)row * pitch * 2;
+    u16 *dest = framebuffer + (y + row) * GFX_PITCH_PX + x;
+    if (((uintptr_t)source | (uintptr_t)dest | (size_t)w * 2) & 3) {
+      for (mrb_int col = 0; col < w; col++)
+        ((volatile u16 *)dest)[col] = source[col * 2] | source[col * 2 + 1] << 8;
+    }
+    else
+      memcpy(dest, source, (size_t)w * 2);
+  }
+}
+
 static int jpeg_output(JPEGDRAW *draw)
 {
-  u16 *framebuffer = draw->pUser;
-
-  for (int row = 0; row < draw->iHeight; row++) {
-    u16 *source = draw->pPixels + row * draw->iWidth;
-    u16 *dest = framebuffer + (draw->y + row) * GFX_PITCH_PX + draw->x;
-    memcpy(dest, source, draw->iWidthUsed * 2);
-  }
-
+  blit_rect(draw->pUser, draw->x, draw->y, draw->iWidthUsed,
+            draw->iHeight, (const u8 *)draw->pPixels, draw->iWidth);
   return 1;
 }
 
@@ -93,14 +120,10 @@ static u16 *screen_framebuffer(mrb_state *mrb, mrb_value screen)
   return NULL;
 }
 
-static void check_rect(mrb_state *mrb, mrb_int x, mrb_int y,
-                       mrb_int w, mrb_int h)
+static void check_size(mrb_state *mrb, mrb_int w, mrb_int h)
 {
-  if (x < 0 || y < 0 || w <= 0 || h <= 0 ||
-      x >= GFX_SCREEN_W || y >= GFX_SCREEN_H ||
-      w > GFX_SCREEN_W - x || h > GFX_SCREEN_H - y)
-    mrb_raise(mrb, E_ARGUMENT_ERROR,
-              "rectangle must be positive and fit within 256x192");
+  if (w <= 0 || h <= 0)
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "width and height must be positive");
 }
 
 static mrb_value gfx_blit(mrb_state *mrb, mrb_value self)
@@ -110,21 +133,17 @@ static mrb_value gfx_blit(mrb_state *mrb, mrb_value self)
   mrb_get_args(mrb, "oiiiiS", &screen_v, &x, &y, &w, &h, &pixels);
 
   u16 *framebuffer = screen_framebuffer(mrb, screen_v);
-  check_rect(mrb, x, y, w, h);
+  check_size(mrb, w, h);
 
   if (!framebuffer)
     return mrb_nil_value();
 
-  mrb_int need = w * h * 2;
-  if (RSTRING_LEN(pixels) < need)
+  u64 need = (u64)w * h * 2;
+  if ((u64)RSTRING_LEN(pixels) < need)
     mrb_raise(mrb, E_ARGUMENT_ERROR,
               "Gfx.blit: pixel string too short for the rectangle");
 
-  const u8 *src = (const u8 *)RSTRING_PTR(pixels);
-  for (mrb_int row = 0; row < h; row++) {
-    u16 *dst = framebuffer + (y + row) * GFX_PITCH_PX + x;
-    memcpy(dst, src + (size_t)row * w * 2, (size_t)w * 2);
-  }
+  blit_rect(framebuffer, x, y, w, h, (const u8 *)RSTRING_PTR(pixels), w);
   return mrb_nil_value();
 }
 
@@ -135,13 +154,16 @@ static mrb_value gfx_fill_rect(mrb_state *mrb, mrb_value self)
   mrb_get_args(mrb, "oiiiii", &screen_v, &x, &y, &w, &h, &color);
 
   u16 *framebuffer = screen_framebuffer(mrb, screen_v);
-  check_rect(mrb, x, y, w, h);
+  check_size(mrb, w, h);
 
   if (!framebuffer)
     return mrb_nil_value();
 
   if (color < 0 || color > 0xFFFF)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "color must be a 16-bit pixel value");
+
+  if (!clip_rect(&x, &y, &w, &h))
+    return mrb_nil_value();
 
   for (mrb_int row = 0; row < h; row++) {
     u16 *dst = framebuffer + (y + row) * GFX_PITCH_PX + x;
@@ -172,8 +194,8 @@ static mrb_value gfx_jpeg(mrb_state *mrb, mrb_value self)
   int height = (s_jpeg.iHeight + unit - 1) >> scale;
   if (x == -1) x = (GFX_SCREEN_W - width) / 2;
   if (y == -1) y = (GFX_SCREEN_H - height) / 2;
-  if (x < 0 || y < 0 || x + width > GFX_SCREEN_W || y + height > GFX_SCREEN_H)
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "Gfx.jpeg: image must fit within 256x192");
+  if (x >= GFX_SCREEN_W || y >= GFX_SCREEN_H || x <= -width || y <= -height)
+    return mrb_nil_value();
 
   s_jpeg.pUser = framebuffer;
   if (!JPEG_decode(&s_jpeg, x, y, scale ? 1 << scale : 0))
